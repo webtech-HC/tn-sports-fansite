@@ -1,9 +1,14 @@
 {
-"$schema": "https://json-schema.org/draft/2020-12/schema",
-"$id": "next.schema.json",
-"title": "Next Game or Empty",
-"anyOf": [
-{ "$ref": "./game.schema.json" },
-{ "type": "object", "maxProperties": 0 }
-]
+  "$id": "next.schema.json",
+  "type": "object",
+  "required": ["date", "opponent"],
+  "additionalProperties": true,
+  "properties": {
+    "date": { "type": "string", "format": "date-time" },
+    "opponent": { "type": "string", "minLength": 1 },
+    "home": { "type": ["boolean", "null"] },
+    "tv": { "type": ["string", "null"] },
+    "venue": { "type": ["string", "null"] }
+  }
 }
+
