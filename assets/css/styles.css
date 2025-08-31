@@ -1,9 +1,40 @@
-:root{
-  --tn:#FF8200;
-  --ink:#e9edf1; --muted:#a8b0ba;
-  --bg0:#0b0e12; --bg1:#101318; --bg2:#171b22; --line:#2a2f37; --card:#0f141a;
-  --r:16px; --gap:20px; --pad:18px;
+/* === Brand palette (VOL metallic orange + field green) === */
+:root {
+  /* Brand & field */
+  --color-accent:        #C77F1C; /* metallic orange */
+  --color-accent-2:      #E29A3D; /* hover / highlight */
+  --color-accent-glow:   #FFD68A; /* soft glow */
+  --color-field-0:       #0B0E12; /* app background */
+  --color-field-1:       #121D0B; /* canvas */
+  --color-field-2:       #0C1A09; /* cards / wells */
+
+  /* Text */
+  --color-ink:           #F3F6F8;
+  --color-ink-dim:       #C9D1D5;
+  --color-ink-muted:     #90979C;
+
+  /* Dividers / strokes */
+  --color-line:          #1E2A22;
+  --color-line-soft:     #151C16;
+
+  /* UT Orange utility if you want a punchier variant */
+  --color-ut-orange:     #FF8200;
 }
+
+/* === Bridge old tokens → new variables (keeps the rest of your CSS working) === */
+:root{
+  --tn:   var(--color-accent);   /* (or use --color-ut-orange if you want extra pop) */
+  --ink:  var(--color-ink);
+  --muted:var(--color-ink-muted);
+
+  --bg0:  var(--color-field-0);
+  --bg1:  var(--color-field-1);
+  --bg2:  var(--color-field-2);
+  --card: var(--color-field-2);
+
+  --line: var(--color-line);
+}
+
 *{box-sizing:border-box}
 html,body{margin:0; background:var(--bg0); color:var(--ink); font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial,sans-serif}
 a{color:var(--tn); text-decoration:none}
@@ -12,8 +43,69 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
   outline: 2px solid var(--tn);
   outline-offset: 2px;
 }
+
+/* App background: deep field with a subtle vignette */
+body {
+  color: var(--color-ink);
+  background:
+    radial-gradient(1200px 600px at 50% -200px, rgba(255,214,138,0.06), transparent 60%),
+    linear-gradient(180deg, var(--color-field-1), var(--color-field-0));
+}
+
+/* Cards lean “field 2” with a faint border */
+.card, .well, .panel {
+  background: linear-gradient(180deg, rgba(255,255,255,0.012), rgba(0,0,0,0.06)),
+              var(--color-field-2);
+  border: 1px solid var(--color-line-soft);
+  box-shadow: 0 0 0 1px rgba(255,214,138,0.03) inset, 0 8px 24px rgba(0,0,0,0.35);
+}
+
+/* Section headlines with a thin accent underline */
+.hrule, .card h2, .section h2 {
+  border-bottom: 1px solid var(--color-line);
+  box-shadow: 0 2px 0 0 rgba(199,127,28,0.20);
+}
+
+/* Primary button — metallic orange with a soft glow */
+.btn,
+button.btn-primary,
+a.btn-primary {
+  background: linear-gradient(180deg, var(--color-accent-2), var(--color-accent));
+  color: #1A0E00;
+  border: 1px solid rgba(0,0,0,0.35);
+  box-shadow:
+    0 0 12px rgba(255,214,138,0.25),
+    inset 0 1px 0 rgba(255,255,255,0.25),
+    inset 0 -1px 0 rgba(0,0,0,0.15);
+}
+.btn:hover { filter: brightness(1.05); }
+
+/* Accent “glow” utility for tiny highlights (e.g. next game time) */
+.glow {
+  text-shadow: 0 0 12px rgba(255,214,138,0.45);
+  color: var(--color-accent-2);
+}
 .skip{position:absolute; left:-9999px; top:auto}
 .skip:focus{left:12px; top:12px; background:#000; color:#fff; padding:8px 10px; border-radius:8px}
+
+
+/* Topbar tint stays dark field */
+.topbar{
+  background: linear-gradient(180deg, var(--color-field-1), var(--color-field-2));
+  border-bottom: 1px solid var(--color-line);
+}
+
+/* Hero bg uses the same vignette language */
+.hero-bg{
+  background:
+    linear-gradient(180deg, rgba(0,0,0,.08), rgba(0,0,0,.20)),
+    radial-gradient(900px 420px at 50% 20%, rgba(255,214,138,.05), transparent 60%),
+    linear-gradient(180deg, var(--color-field-2), var(--color-field-1));
+}
+
+/* Links inside map pop with the accent */
+.leaflet-container a { color: var(--color-accent-2); }
+
 
 /* Topbar */
 .topbar{
