@@ -31,10 +31,9 @@ body{
   margin:0;
   color: var(--ink);
   font: 500 16px/1.45 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-
-  /* background image cover/fixed with darkening gradient */
-  background:
-    url('./assets/imgs/tn-metallic-1.jpg') center center / cover fixed no-repeat;
+ background-color: #0b0f0d; /* fallback if image can't load */
+  background: #0b0f0d url("../img/tn-metallic-1.jpg")
+              center -12px / cover no-repeat fixed;
 }
 
 .wrap{ width:min(1200px, 100% - 32px); margin-inline:auto; }
