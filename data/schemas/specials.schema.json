@@ -1,0 +1,7 @@
+{
+"$schema": "https://json-schema.org/draft/2020-12/schema",
+"$id": "specials.schema.json",
+"title": "Specials (array)",
+"type": "array",
+"items": { "$ref": "./special.schema.json" }
+}
