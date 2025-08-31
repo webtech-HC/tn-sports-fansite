@@ -4,7 +4,7 @@
  * - schedule.json (array)
  * - weather.json (3-day)
  * - places.json (list)
- *
+ 
  * Requires:
  *  - secrets.CFBD_API_KEY (CollegeFootballData)
  *  - secrets.FSQ_API_KEY  (Foursquare Places)
