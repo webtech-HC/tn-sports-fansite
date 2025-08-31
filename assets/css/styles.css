@@ -1,155 +1,110 @@
-/* ========== Theme Vars ========== */
-:root {
-  /* Brand & field */
-  --color-accent:      #C77F1C; /* metallic orange */
-  --color-accent-2:    #E29A3D; /* hover / highlight */
-  --color-accent-glow: #FFD68A; /* soft glow */
-  --color-field-0:     #0B0E12; /* app background */
-  --color-field-1:     #121D0B; /* canvas */
-  --color-field-2:     #0C1A09; /* cards / wells */
+/* ===== Theme ===== */
+:root{
+  --color-ink: #E7EDE8;
+  --color-ink-dim: #b8c3ba;
+  --color-bg: #0e1a11;
+  --color-card: #0f2215;
+  --color-card-2: #0c1b10;
+  --color-line: #233a29;
 
-  /* Text */
-  --color-ink:         #F3F6F8;
-  --color-ink-dim:     #C9D1D5;
-  --color-ink-muted:   #90979C;
+  --accent-1: #FF9300; /* metallic orange */
+  --accent-1b: #c46f00;
+  --accent-2: #6abf7f; /* hover / highlights */
 
-  /* Dividers / strokes */
-  --color-line:        #1E2A22;
-  --color-line-soft:   #151C16;
-
-  /* Spacing */
-  --pad: 14px;
-  --gap: 14px;       /* NEW — used across grids/cards */
-
-  /* Shadow */
-  --shadow-lg: 0 8px 24px rgba(0,0,0,.35);
-  --shadow-inset: 0 0 0 1px rgba(255,214,138,.03) inset;
-
-  /* Background image (path is relative to this CSS file) */
-  --bg-image: url("../imgs/tn-metallic-1.jpg");
-
-  /* Optional punchy variant */
-  --color-ut-orange: #FF8200;
+  --radius: 14px;
+  --gap: 16px;
 }
 
-/* ========== Base ========== */
-* { box-sizing: border-box; }
-html, body { height: 100%; }
-body {
-  margin: 0;
+/* ===== Reset ===== */
+*{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; }
+body{
+  font: 16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   color: var(--color-ink);
-
-  /* Fixed, cover background with soft overlays */
   background:
-    radial-gradient(1200px 600px at 50% -200px, rgba(255,214,138,.06), transparent 60%),
-    linear-gradient(180deg, var(--color-field-1), var(--color-field-0)),
-    var(--bg-image);
-  background-repeat: no-repeat, no-repeat, no-repeat;
-  background-size: auto, auto, cover;       /* image covers */
-  background-attachment: scroll, scroll, fixed; /* image fixed */
-  background-position: center top, center top, center top;
-
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  font: 15px/1.5 system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, sans-serif;
+     linear-gradient(180deg, rgba(0,0,0,.75), rgba(0,0,0,.35)) 0 0 / cover,
+     url("../imgs/tn-metallic-1.jpg") center -120px / cover no-repeat,
+     var(--color-bg);
+  min-height:100vh;
 }
 
-/* Container */
-.wrap { width: min(1180px, 94%); margin: 0 auto; padding: 24px 0; }
+/* ===== Helpers ===== */
+.wrap{ width:min(1260px, 92%); margin: 0 auto; padding: 24px 0; }
+.sr-only{ position:absolute; clip:rect(0 0 0 0); clip-path: inset(50%); height:1px; width:1px; overflow:hidden; white-space:nowrap; }
 
-/* ========== Layout helpers ========== */
-.grid        { display: grid; gap: var(--gap); }
-.grid-2      { grid-template-columns: 2fr 1fr; }
-.stack       { display: grid; gap: var(--gap); }
-
-/* Tighten on mobile */
-@media (max-width: 900px){
-  .grid-2 { grid-template-columns: 1fr; }
+/* ===== Header ===== */
+.site-header{
+  padding: 18px 0 10px;
+  background:
+     linear-gradient(180deg, rgba(0,0,0,.65), rgba(0,0,0,.1));
 }
+.site-header .brand{ display:flex; align-items:center; justify-content:space-between; gap: 10px; width:min(1260px,92%); margin:0 auto; }
+.wordmark{ font-size:28px; letter-spacing:.12em; font-weight:800; }
+.nav a{ color: var(--color-ink); margin-right:16px; text-decoration:none; opacity:.9; }
+.nav a:hover{ opacity:1; }
+.btn{ display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:999px; background:linear-gradient(#26371f, #1c2b19); color:#fff; text-decoration:none; border:1px solid #1b2a1a; }
+.btn:hover{ filter:brightness(1.05); }
+.btn-small{ padding:6px 10px; font-size:14px; }
+.btn-accent{ background: linear-gradient(#ff9907, #e28500); border-color:#c46f00; color:#10140d; }
 
-/* ========== Header ========== */
-.site-header {
-  position: sticky; top: 0; z-index: 10;
-  background: linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.20));
-  border-bottom: 1px solid var(--color-line-soft);
-  backdrop-filter: blur(4px);
+.lede{ width:min(1260px,92%); margin:10px auto 6px; color:var(--color-ink-dim); }
+.toolbar{ width:min(1260px,92%); margin:0 auto 8px; display:flex; gap:10px; flex-wrap:wrap; }
+.chip{ display:inline-flex; padding:6px 10px; border-radius:999px; background:#213221; border:1px solid #253b27; text-decoration:none; color:#e9efe9; }
+.chip:hover{ background:#274027; }
+.databar{ width:min(1260px,92%); margin:0 auto; color:var(--color-ink-dim); display:flex; gap:12px; align-items:center; }
+.databar .sep{ opacity:.6; }
+
+/* ===== Grid & Cards ===== */
+.grid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gap);
 }
-.brand {
-  display: inline-flex; align-items: center; gap: 10px;
-  font-weight: 800; letter-spacing: .04em; font-size: 28px; text-decoration: none;
-  color: var(--color-ink);
+@media (min-width: 980px){
+  .grid{ grid-template-columns: 2fr 1fr; }
 }
-.topnav a { color: var(--color-ink-dim); margin-left: 14px; text-decoration: none; }
-.topnav a:hover { color: var(--color-accent-2); }
-
-/* ========== Cards & UI ========== */
-.card, .well, .panel {
-  background: linear-gradient(180deg, rgba(255,255,255,.012), rgba(0,0,0,.06)), var(--color-field-2);
-  border: 1px solid var(--color-line-soft);
-  box-shadow: var(--shadow-inset), var(--shadow-lg);
-  border-radius: 14px;
-  padding: calc(var(--pad) + 2px);
-  /* vertical rhythm between stacked cards */
-  margin: 0;
+.card{
+  background: linear-gradient(180deg, rgba(21,37,25,.9), rgba(13,24,16,.9));
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: 0 6px 24px rgba(0,0,0,.25);
+  min-height: 140px;
 }
-.card + .card,
-.panel + .panel,
-.well + .well { margin-top: var(--gap); }
+.card.wide{ grid-column: 1 / -1; }
 
-h1, h2, h3 { margin: 0 0 10px; }
-h2 { font-size: 20px; }
-p  { margin: 0 0 10px; color: var(--color-ink-dim); }
+.card h2{ margin:0 0 10px; font-size:18px; letter-spacing:.02em; }
+.card h3{ margin:0 0 6px; font-size:16px; }
+.card small{ color: var(--color-ink-dim); }
 
-.table { width: 100%; border-collapse: collapse; }
-.table th, .table td { padding: 8px 10px; border-bottom: 1px solid var(--color-line-soft); }
-.table thead th { color: var(--color-ink-muted); font-weight: 600; }
-
-.list { list-style: none; margin: 0; padding: 0; }
-.list li { padding: 6px 0; border-bottom: 1px dashed var(--color-line-soft); }
-.list li:last-child { border-bottom: 0; }
-
-.bullets { margin: 0; padding-left: 18px; }
-.bullets li { margin: 6px 0; color: var(--color-ink-dim); }
-
-/* Divider-ish header underline */
-.card h2, .section h2 {
-  border-bottom: 1px solid var(--color-line);
-  box-shadow: 0 2px 0 0 rgba(199,127,28,.20);
-  padding-bottom: 8px;
-  margin-bottom: 12px;
+.table-scroll{ overflow:auto; border:1px solid var(--color-line); border-radius:12px; }
+table{ width:100%; border-collapse:collapse; }
+thead th{
+  text-align:left; padding:10px; background:#142418; border-bottom:1px solid var(--color-line);
 }
+tbody td{ padding:9px 10px; border-bottom:1px solid #1b2c1f; }
 
-/* Buttons */
-.btn {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 8px 12px; border-radius: 10px; cursor: pointer;
-  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.06));
-  border: 1px solid rgba(0,0,0,.4); color: var(--color-ink);
-  text-decoration: none; user-select: none;
+/* ===== Weather ===== */
+ul.wx{ list-style:none; padding:0; margin:0 0 8px 0; }
+ul.wx li{ display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1px dashed #213326; }
+ul.wx li b{ width:48px; display:inline-block; }
+ul.wx li span{ min-width:36px; }
+ul.wx li em{ margin-left:auto; color:var(--color-ink-dim); }
+
+/* ===== Specials ===== */
+.grid-sm{ display:grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap:12px; }
+.special{
+  background:#122216; border:1px solid #1b2c1f; border-radius:12px; padding:12px;
 }
-.btn:hover { filter: brightness(1.05); }
+.special .meta{ color:var(--color-ink-dim); font-size:14px; margin:6px 0 4px; }
 
-.btn-primary {
-  background: linear-gradient(180deg, var(--color-accent-2), var(--color-accent));
-  color: #1A0E00;
-  box-shadow:
-    0 0 12px rgba(255,214,138,.25),
-    inset 0 1px 0 rgba(255,255,255,.25),
-    inset 0 -1px 0 rgba(0,0,0,.15);
-}
+/* ===== Map ===== */
+.map{ width:100%; height:280px; border-radius:12px; border:1px solid var(--color-line); overflow:hidden; }
 
-/* Tiny “glow” accent utility */
-.glow { text-shadow: 0 0 12px rgba(255,214,138,.45); color: var(--color-accent-2); }
+/* ===== Guide ===== */
+.guide-cols{ display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:14px; }
+.guide-cols h3{ margin:4px 0 6px; }
+.guide-cols ul{ margin:0; padding-left:18px; }
 
-/* ========== Hero ========== */
-.hero .kicker { color: var(--color-ink-muted); margin-bottom: 10px; }
-.hero .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
-.hero .meta { color: var(--color-ink-muted); }
-
-/* ========== Map ========== */
-#map { width: 100%; height: 260px; }
-
-/* ========== Footer ========== */
-.site-footer { color: var(--color-ink-muted); padding-bottom: 48px; }
-.site-footer a { color: var(--color-accent-2); }
-
+/* ===== Footer ===== */
+.site-footer{ color:var(--color-ink-dim); margin-top:24px; padding-bottom:48px; }
