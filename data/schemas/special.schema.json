@@ -1,0 +1,15 @@
+{
+"$schema": "https://json-schema.org/draft/2020-12/schema",
+"$id": "special.schema.json",
+"title": "Special (editorial)",
+"type": "object",
+"additionalProperties": false,
+"required": ["title"],
+"properties": {
+"title": { "type": "string", "minLength": 1 },
+"biz": { "type": ["string", "null"], "default": null },
+"area": { "type": ["string", "null"], "default": null },
+"time": { "type": ["string", "null"], "default": null },
+"link": { "type": ["string", "null"], "format": "uri", "default": null }
+}
+}
