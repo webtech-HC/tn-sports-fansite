@@ -1,193 +1,160 @@
-const fs   = require('node:fs');
-const path = require('node:path');
+/* Fetch & build JSON for the site.
+   Providers:
+   - CollegeFootballData (schedule/next)
+   - Open-Meteo (3-day forecast for Knoxville)
+   - Foursquare (sample nearby places)
+*/
+
+import fs from 'node:fs';
+import path from 'node:path';
+import process from 'node:process';
 
 const ROOT = process.cwd();
-const DATA = path.join(ROOT, 'data');
+const DATA_DIR = path.join(ROOT, 'data');
+const SCHEMA_DIR = path.join(DATA_DIR, 'schemas'); // not required here, just convention
 
-const TEAM = 'Tennessee';
+const CFBD_API_KEY = process.env.CFBD_API_KEY || '';
+const FSQ_API_KEY  = process.env.FSQ_API_KEY  || '';
+
+const NOW = new Date();
+const YEAR = NOW.getUTCFullYear();
 const KNOX = { lat: 35.9606, lon: -83.9207 };
+const TZ = 'America/New_York';
 
-// ----------------- util -----------------
-const writeJSON = (name, obj) =>
-  fs.writeFileSync(path.join(DATA, name), JSON.stringify(obj, null, 2) + '\n', 'utf8');
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const writeJSON = (file, data) =>
+  fs.writeFileSync(path.join(DATA_DIR, file), JSON.stringify(data, null, 2) + '\n');
 
-const toISO = (s) => {
-  if (!s) return null;
-  const d = new Date(s);
-  return Number.isNaN(+d) ? null : d.toISOString();
-};
-
-async function fetchJSON(url, init = {}) {
-  const res = await fetch(url, init);
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`);
-  return res.json();
-}
-
-// ----------------- CFBD schedule -----------------
-async function buildSchedule(year, team) {
-  const url = `https://api.collegefootballdata.com/games?year=${year}&team=${encodeURIComponent(team)}&seasonType=regular`;
-
-  const rows = await fetchJSON(url, {
-    headers: { Authorization: `Bearer ${process.env.CFBD_API_KEY}` }
-  });
-
-  const mapped = rows.map(g => {
-    const isHome   = g.home_team === team;
-    const opponent = isHome ? g.away_team : g.home_team;
-    const iso      = toISO(g.start_date || g.startDate); // CFBD uses start_date
-
-    // result if final
-    let result = null;
-    const hp = g.home_points;
-    const ap = g.away_points;
-    if (Number.isFinite(hp) && Number.isFinite(ap)) {
-      const forUs   = isHome ? hp : ap;
-      const against = isHome ? ap : hp;
-      result = `${forUs}-${against}`;
+async function http(url, opt = {}, retries = 2) {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const r = await fetch(url, opt);
+      if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+      return await r.json();
+    } catch (e) {
+      if (i === retries) throw e;
+      await sleep(400 * (i + 1));
     }
+  }
+}
 
-    return {
-      date: iso,                          // must be ISO to satisfy schema
-      opponent,
-      home: isHome,
-      tv: g.tv || null,
-      result,
-      venue: g.venue || null
-    };
+/* ---------- Helpers to enforce success ---------- */
+async function must(fn, label) {
+  const out = await fn().catch(err => {
+    console.error(`[${label}]`, err);
+    throw err;
   });
-
-  // Keep ONLY games that have a real kickoff time (no placeholders)
-  return mapped
-    .filter(g => !!g.date)
-    .sort((a, b) => a.date.localeCompare(b.date));
-}
-
-function computeNext(schedule) {
-  const now = Date.now();
-  const upcoming = schedule
-    .map(g => ({ ...g, t: Date.parse(g.date) }))
-    .filter(g => Number.isFinite(g.t) && g.t > now)
-    .sort((a, b) => a.t - b.t)[0];
-
-  if (!upcoming) return {};
-  const { date, opponent, home, tv, result, venue } = upcoming;
-  return { date, opponent, home, tv: tv ?? null, result: result ?? null, venue: venue ?? null };
-}
-
-// ----------------- Open-Meteo (3-day) -----------------
-async function buildWeather(lat = KNOX.lat, lon = KNOX.lon) {
-  const url =
-    `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=` +
-    `temperature_2m_max,temperature_2m_min,precipitation_sum&forecast_days=3&timezone=UTC`;
-  const j = await fetchJSON(url);
-  const out = (j.daily?.time || []).map((d, i) => ({
-    date: d, // YYYY-MM-DD (schema "date")
-    hi: j.daily.temperature_2m_max?.[i] ?? null,
-    lo: j.daily.temperature_2m_min?.[i] ?? null,
-    precip: j.daily.precipitation_sum?.[i] ?? null
-  }));
+  if (!out || (Array.isArray(out) && out.length === 0)) {
+    throw new Error(`[${label}] returned no data`);
+  }
   return out;
 }
 
-// ----------------- Foursquare Places -----------------
-const FSQ_HEADERS = () => ({
-  Authorization: process.env.FSQ_API_KEY,
-  accept: 'application/json'
-});
-
-async function fsqSearch({ query, lat = KNOX.lat, lon = KNOX.lon, radius = 6000, limit = 20 }) {
-  const url =
-    `https://api.foursquare.com/v3/places/search?` +
-    `query=${encodeURIComponent(query)}&ll=${lat},${lon}&radius=${radius}&sort=POPULARITY&limit=${limit}`;
-
-  const j = await fetchJSON(url, { headers: FSQ_HEADERS() });
-  return Array.isArray(j.results) ? j.results : [];
+/* ---------- CFBD: schedule + next ---------- */
+async function fetchScheduleCFBD() {
+  const url = `https://api.collegefootballdata.com/games?year=${YEAR}&team=Tennessee&seasonType=regular`;
+  const data = await http(url, { headers: { Authorization: `Bearer ${CFBD_API_KEY}` } });
+  // Normalize minimal shape used by the site
+  const rows = (data || []).map(g => ({
+    date: g.start_date || g.startDate || g.start_time_tbd ? null : g.start_date, // some fields vary
+    opponent: g.home_team === 'Tennessee' ? g.away_team : g.home_team,
+    home: g.home_team === 'Tennessee' ? true : (g.away_team === 'Tennessee' ? false : null),
+    tv: g.tv || null,
+    result: g.home_points != null && g.away_points != null
+      ? `${g.home_points}-${g.away_points}`
+      : null,
+    venue: g.venue || null,
+  })).sort((a,b) => (a.date||'').localeCompare(b.date||''));
+  return rows;
 }
 
-// Best-at-gameday buckets to cover different scenes
-const FSQ_QUERIES = [
-  'sports bar', 'bar', 'bbq', 'wings', 'pizza', 'brewery',
-  'brunch', 'breakfast', 'coffee'
-];
-
-function pickArea(loc = {}) {
-  // Prefer neighborhood; fall back to cross street or locality; null is allowed per schema
-  return (Array.isArray(loc.neighborhood) && loc.neighborhood[0]) ||
-         loc.cross_street || loc.locality || null;
-}
-
-function fsqToPlace(p) {
-  const loc = p.location || {};
-  const main = p.geocodes?.main || {};
-  const url = p.website || p.link || (p.fsq_id ? `https://foursquare.com/v/${p.fsq_id}` : null);
-
-  // place.schema.json requires name; others may be null and still validate
+function computeNext(rows) {
+  const now = Date.now();
+  const upcoming = rows.find(r => r.date && new Date(r.date).getTime() > now);
+  if (!upcoming) return null;
   return {
-    name: p.name,
-    area: pickArea(loc),
-    address: loc.formatted_address || [loc.address, loc.locality].filter(Boolean).join(', ') || null,
-    lat: Number.isFinite(main.latitude) ? main.latitude : null,
-    lon: Number.isFinite(main.longitude) ? main.longitude : null,
-    url: url || null
+    date: new Date(upcoming.date).toISOString(), // canonical
+    opponent: upcoming.opponent || null,
+    home: upcoming.home ?? null,
+    tv: upcoming.tv ?? null,
+    result: upcoming.result ?? null,
+    venue: upcoming.venue || 'Neyland Stadium',
   };
 }
 
-async function buildPlaces() {
-  if (!process.env.FSQ_API_KEY) return [];
-  const seen = new Set();
-  const out = [];
-
-  // Query in parallel, then merge deterministically (query order matters a bit)
-  const results = await Promise.all(FSQ_QUERIES.map(q => fsqSearch({ query: q })));
-
-  for (const list of results) {
-    for (const r of list) {
-      const id = r.fsq_id || `${r.name}|${r.location?.formatted_address || ''}`;
-      if (seen.has(id)) continue;
-      seen.add(id);
-
-      // Skip obvious outliers far away (> 25km) if Foursquare returns them
-      const dLat = (r.geocodes?.main?.latitude ?? KNOX.lat) - KNOX.lat;
-      const dLon = (r.geocodes?.main?.longitude ?? KNOX.lon) - KNOX.lon;
-      const approxKm = Math.sqrt(dLat * dLat + dLon * dLon) * 111;
-      if (approxKm > 25) continue;
-
-      out.push(fsqToPlace(r));
-      if (out.length >= 40) break; // cap
-    }
-    if (out.length >= 40) break;
-  }
-
-  return out;
+/* ---------- Open-Meteo: 3-day ---------- */
+async function fetchWeather() {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${KNOX.lat}&longitude=${KNOX.lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&forecast_days=3&timezone=${encodeURIComponent(TZ)}`;
+  const wx = await http(url);
+  const rows = (wx.daily?.time || []).slice(0, 3).map((_, i) => ({
+    date: wx.daily.time?.[i] ?? null,
+    hi: Number.isFinite(wx.daily.temperature_2m_max?.[i]) ? wx.daily.temperature_2m_max[i] : null,
+    lo: Number.isFinite(wx.daily.temperature_2m_min?.[i]) ? wx.daily.temperature_2m_min[i] : null,
+    precip: Number.isFinite(wx.daily.precipitation_probability_max?.[i]) ? wx.daily.precipitation_probability_max[i] : null,
+  }));
+  return rows;
 }
 
-// ----------------- main -----------------
+/* ---------- Foursquare: sample places ---------- */
+async function fetchFoursquare() {
+  if (!FSQ_API_KEY) return [];
+  const url = new URL('https://api.foursquare.com/v3/places/search');
+  url.searchParams.set('ll', `${KNOX.lat},${KNOX.lon}`);
+  url.searchParams.set('radius', '4000');
+  url.searchParams.set('limit', '20');
+  url.searchParams.set('categories', '13065,13032,13034'); // restaurants, bars, cafes
+  url.searchParams.set('fields', 'fsq_id,name,location,geocodes,website,link');
+
+  const data = await http(url.toString(), {
+    headers: { Authorization: FSQ_API_KEY, accept: 'application/json' }
+  });
+
+  const rows = (data.results || []).map(it => ({
+    name: it.name || null,
+    area: it.location?.neighborhood?.[0] || it.location?.locality || null,
+    address: it.location?.formatted_address || null,
+    lat: Number(it.geocodes?.main?.latitude) || null,
+    lon: Number(it.geocodes?.main?.longitude) || null,
+    url: it.website || it.link || null
+  })).filter(p => p.name);
+
+  return rows;
+}
+
+/* ---------- Main ---------- */
 (async () => {
-  const YEAR = new Date().getUTCFullYear();
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
-  const [schedule, weather, places] = await Promise.all([
-    buildSchedule(YEAR, TEAM).catch(e => { console.error('schedule:', e.message); return []; }),
-    buildWeather().catch(e => { console.error('weather:', e.message); return []; }),
-    buildPlaces().catch(e => { console.error('places:', e.message); return []; }),
-  ]);
-
+  const schedule = await must(fetchScheduleCFBD, 'CFBD');
   const next = computeNext(schedule);
+  const weather = await must(fetchWeather, 'Open-Meteo');
+  const places = await fetchFoursquare().catch(() => []);
 
+  // Specials are community-provided; keep file if exists, otherwise seed empty array
+  let specials = [];
+  try {
+    specials = JSON.parse(fs.readFileSync(path.join(DATA_DIR, 'specials.json'), 'utf8'));
+    if (!Array.isArray(specials)) specials = [];
+  } catch { specials = []; }
+
+  // Write files
   writeJSON('schedule.json', schedule);
-  writeJSON('next.json', Object.keys(next).length ? next : {}); // {} if none upcoming
+  writeJSON('next.json', next || {});
   writeJSON('weather.json', weather);
   writeJSON('places.json', places);
 
+  // meta for "data updated"
   writeJSON('meta.json', {
     lastUpdated: new Date().toISOString(),
-    providers: { schedule: "CollegeFootballData", weather: "Open-Meteo", places: "Foursquare" },
+    providers: ['CollegeFootballData', 'Open-Meteo', 'Foursquare'],
     year: YEAR
   });
 
-  console.log('done', {
-    schedule: schedule.length,
-    next: Object.keys(next).length ? next.date : 'none',
-    weather: weather.length,
-    places: places.length
-  });
+  console.log('DONE: ',
+    `schedule=${schedule.length}`,
+    `next=${next ? '1' : 'none'}`,
+    `weather=${weather.length}`,
+    `places=${places.length}`,
+    `specials=${specials.length}`
+  );
 })().catch(e => { console.error(e); process.exitCode = 1; });
