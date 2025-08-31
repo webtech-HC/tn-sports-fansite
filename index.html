@@ -3,209 +3,198 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Tennessee • Gameday Hub (Unofficial)</title>
-  <meta name="description" content="Fan-run, unofficial Tennessee football weekend guide: schedule, specials, maps, and tips." />
-  <meta name="theme-color" content="#FF8200" />
-  <link rel="stylesheet" href="assets/css/styles.css" />
+  <title>TENNESSEE — Gameday Hub</title>
+  <meta name="description" content="Fan-run, unofficial Tennessee football gameday hub: schedule, weather, map, and tips." />
 
-  <!-- Leaflet (map) with SRI -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-    crossorigin="anonymous">
-  <script
-    defer
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIJbUGb7Z0QAY0CjU52WnU9gS61gCqo="
-    crossorigin="anonymous"></script>
+  <!-- Styles -->
+  <link rel="stylesheet" href="/assets/css/styles.css?v=2025-09-01" />
+
+  <!-- Leaflet (map) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 </head>
 <body>
-  <a class="skip" href="#main">Skip to content</a>
+  <div class="wrap">
 
-  <header class="topbar" role="banner">
-    <div class="brand">TENNESSEE • <span>Gameday Hub</span></div>
-    <nav class="nav" aria-label="Primary">
-      <a href="#schedule">Schedule</a>
-      <a href="#specials">Specials</a>
-      <a href="#map">Map</a>
-      <a href="#guide">Guide</a>
-      <a class="btn btn-small" href="#submit">Submit</a>
-    </nav>
-  </header>
-
-  <!-- TICKER (Top ribbon) -->
-  <section class="ticker" aria-label="Gameday ticker">
-    <div class="ticker-inner">
-      <div class="ticker-track" id="tickerTrack" aria-live="polite"></div>
-    </div>
-  </section>
-
-  <!-- HERO -->
-  <section class="hero" role="banner" aria-label="Site hero">
-    <div class="hero-bg" style="background-image: url('');"></div>
-    <div class="hero-inner">
-      <h1 class="hero-title">TENNESSEE</h1>
-      <p class="hero-sub">Fan-run. Unofficial. Built by fans for fans.</p>
-      <div class="hero-actions">
+    <!-- Masthead -->
+    <header class="mast">
+      <div class="brand">
+        <h1>TENNESSEE</h1>
+        <p class="muted">Fan-run. Unofficial. Built by fans for fans.</p>
+      </div>
+      <div class="top-actions">
         <a class="btn" href="#schedule">View Schedule</a>
         <a class="btn ghost" href="#specials">Find Specials</a>
         <a class="btn ghost" href="#submit">Submit a Listing</a>
-        <a id="addCalHero" class="btn ghost" href="#" download>Add to Calendar</a>
+        <a class="btn ghost" href="#calendar">Add to Calendar</a>
       </div>
-      <div class="mini-countdown" aria-live="polite">
-        <span>Kickoff in</span>
-        <strong id="miniDays">00</strong>d :
-        <strong id="miniHours">00</strong>h :
-        <strong id="miniMins">00</strong>m
-      </div>
-      <div class="data-updated"><small id="dataUpdated">Data updated —</small></div>
-    </div>
-  </section>
+    </header>
 
-  <main id="main" class="wrap" aria-label="Main content" tabindex="-1">
-    <!-- QUICK GLANCE ROW -->
+    <!-- Quick row: kickoff + timer -->
     <section class="row-quick">
-      <!-- Upcoming Game -->
-      <article class="card">
-        <h2 class="hd">Upcoming Game</h2>
-        <p class="big"><strong>Tennessee</strong> <span class="vs">vs</span> <span id="qOpp">Opponent</span></p>
-        <p class="sub"><span id="qDate">Date</span> • <span id="qTime">Time</span></p>
-        <p class="muted" id="qVenue">Venue, Knoxville, TN</p>
-        <p><a id="addCalCard" class="btn btn-small ghost" href="#" download>Add to Calendar</a></p>
-      </article>
-
-      <!-- Weather -->
-      <article class="card">
-        <h2 class="hd">Weather (3-day)</h2>
-        <ul class="wx">
-          <li><b>Fri</b> <span>—</span> <em>—</em></li>
-          <li><b>Sat</b> <span>—</span> <em>—</em></li>
-          <li><b>Sun</b> <span>—</span> <em>—</em></li>
-        </ul>
-        <p class="muted">Forecasts change—check again closer to kickoff.</p>
-      </article>
-
-      <!-- This Week in Knoxville -->
-      <article class="card">
-        <h2 class="hd">This Week in Knoxville</h2>
-        <ul class="links">
-          <li><a href="#" target="_blank" rel="noopener">Market Square Live Music</a></li>
-          <li><a href="#" target="_blank" rel="noopener">Old City Night Market</a></li>
-          <li><a href="#" target="_blank" rel="noopener">Downtown Brunch Crawl</a></li>
-        </ul>
-      </article>
+      <div style="grid-column: span 12;">
+        <span class="badge">Kickoff in</span>
+        <span class="countdown" id="kickTimer">
+          <span class="slot" id="cd-d">00</span>
+          <span class="slot" id="cd-h">00</span>
+          <span class="slot" id="cd-m">00</span>
+          <span class="slot" id="cd-s">00</span>
+        </span>
+        <small class="muted">Data updated — <span id="dataUpdated">—</span></small>
+      </div>
     </section>
 
-    <!-- MAIN GRID -->
-    <section class="grid-main">
-      <!-- LEFT (8 cols) -->
-      <div class="left">
-        <!-- Schedule -->
-        <section id="schedule" class="card">
-          <h2 class="hd">Schedule & Results</h2>
-          <div class="table-wrap">
-            <table class="tbl" aria-describedby="schNote">
-              <thead>
-                <tr><th>Date</th><th>Opponent</th><th>H/A</th><th>TV</th><th>Result</th></tr>
-              </thead>
-              <tbody id="schBody"></tbody>
-            </table>
-          </div>
-          <p id="schNote" class="muted">Times/TV subject to change. Check official sources day-of.</p>
-        </section>
+    <!-- Main grid -->
+    <main class="grid-main">
+      <!-- LEFT COLUMN ------------------------------------------------>
+      <section class="left">
 
-        <!-- Featured specials -->
-        <section id="specials" class="card">
-          <h2 class="hd">Featured Specials</h2>
-          <div class="specials-grid" id="specialsGrid"></div>
-          <p class="muted">Listings are community-submitted. Call ahead to confirm.</p>
-        </section>
-      </div>
-
-      <!-- RIGHT (4 cols) -->
-      <aside class="right">
-        <!-- Map card (Leaflet) -->
-        <section id="map" class="card">
-          <h2 class="hd">Map</h2>
-          <div id="leafletMap" class="leaflet-map" role="region" aria-label="Places open now near Knoxville"></div>
-          <p class="muted sm" id="mapNote">
-            Pins show a sample of nearby food/drink/watch spots.
-            Data © Foursquare. Map © OpenStreetMap contributors.
+        <!-- Upcoming Game -->
+        <article id="next" class="card">
+          <h2>Upcoming Game</h2>
+          <div><strong id="nextOpponent">Tennessee vs Opponent</strong></div>
+          <div class="muted"><span id="nextDate">Date · Time</span></div>
+          <div class="muted">Venue: <span id="nextVenue">Knoxville, TN</span></div>
+          <p style="margin-top:10px;">
+            <a id="addToCalendar" class="btn ghost" href="#" rel="nofollow">Add to Calendar</a>
           </p>
-        </section>
+        </article>
 
-        <!-- Submit CTA -->
-        <section id="submit" class="card cta">
-          <h2 class="hd">Submit a Listing</h2>
+        <!-- Weather (3-day) -->
+        <article class="card" id="weather">
+          <h2>Weather (3-day)</h2>
+          <table class="wx">
+            <thead>
+              <tr><th>Day</th><th class="right-align">Hi</th><th class="right-align">Lo</th><th class="right-align">Precip%</th></tr>
+            </thead>
+            <tbody id="wxRows">
+              <tr><td>Fri</td><td class="right-align">—</td><td class="right-align">—</td><td class="right-align">—</td></tr>
+              <tr><td>Sat</td><td class="right-align">—</td><td class="right-align">—</td><td class="right-align">—</td></tr>
+              <tr><td>Sun</td><td class="right-align">—</td><td class="right-align">—</td><td class="right-align">—</td></tr>
+            </tbody>
+          </table>
+          <small class="muted">Forecasts change—check again closer to kickoff.</small>
+        </article>
+
+        <!-- Schedule & Results -->
+        <article class="card" id="schedule">
+          <h2>Schedule &amp; Results</h2>
+          <table class="table">
+            <thead>
+              <tr>
+                <th style="width:24%;">Date</th>
+                <th>Opponent</th>
+                <th style="width:10%;">H/A</th>
+                <th style="width:14%;">TV</th>
+                <th style="width:16%;">Result</th>
+              </tr>
+            </thead>
+            <tbody id="schedBody">
+              <!-- rows injected -->
+            </tbody>
+          </table>
+          <small class="muted">Times/TV subject to change. Check official sources day-of.</small>
+        </article>
+
+        <!-- Featured Specials -->
+        <article class="card" id="specials">
+          <h2>Featured Specials</h2>
+          <ul id="specialsList" style="margin:0; padding-left:1rem;">
+            <!-- items injected -->
+          </ul>
+          <small class="muted">Listings are community-submitted. Call ahead to confirm.</small>
+        </article>
+
+        <!-- Gameday Guide -->
+        <article class="card guide" id="guide">
+          <h2>Gameday Guide (Unofficial)</h2>
+          <div class="guide-grid">
+            <div style="grid-column: span 6;">
+              <h3>Getting There</h3>
+              <ul>
+                <li>Rideshare or public lots; expect road closures near campus.</li>
+                <li>Plan 60–90 minutes for traffic and entry queues.</li>
+                <li>Pick a meetup spot in case phones die.</li>
+              </ul>
+              <h3>Food &amp; Water</h3>
+              <ul>
+                <li>Many vendors are cashless—bring a card or mobile pay.</li>
+                <li>Hydrate early; find refill spots on concourses.</li>
+                <li>Family sections are great with kids; consider ear protection.</li>
+              </ul>
+            </div>
+            <div style="grid-column: span 6;">
+              <h3>Entry &amp; Bags</h3>
+              <ul>
+                <li>Many venues have clear-bag rules and metal detectors.</li>
+                <li>Leave large items outside; alcohol and pointed umbrellas at home.</li>
+                <li>Always verify with the official event page before you go.</li>
+              </ul>
+              <h3>Accessibility</h3>
+              <ul>
+                <li>Check ADA parking, shuttle drop-offs, elevators, and seating.</li>
+                <li>Service animals typically permitted—follow venue guidance.</li>
+                <li>Contact accessibility office ahead for assistance.</li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+      </section>
+
+      <!-- RIGHT COLUMN ----------------------------------------------->
+      <aside class="right">
+
+        <!-- This Week in Knoxville -->
+        <article class="card" id="events">
+          <h2>This Week in Knoxville</h2>
+          <ul id="eventsList" style="margin:0; padding-left:1rem;">
+            <li><a target="_blank" rel="noopener">Market Square Live Music</a></li>
+            <li><a target="_blank" rel="noopener">Old City Night Market</a></li>
+            <li><a target="_blank" rel="noopener">Downtown Brunch Crawl</a></li>
+          </ul>
+        </article>
+
+        <!-- Map -->
+        <article class="card" id="map">
+          <h2>Map</h2>
+          <div id="mapCanvas" role="region" aria-label="Map of specials/venues"></div>
+          <small class="muted">Pins show a sample of nearby food/shops/launch spots. Data © Foursquare; Map © OpenStreetMap contributors.</small>
+        </article>
+
+        <!-- Submit a Listing -->
+        <article class="card" id="submit">
+          <h2>Submit a Listing</h2>
           <p>Restaurant, bar, shop, or event with a gameday special? Share it with fans.</p>
-          <a class="btn" href="#submit-form">Open form</a>
-        </section>
+          <p><a class="btn" href="#" id="openForm">Open form</a></p>
+        </article>
 
         <!-- Newsletter -->
-        <section class="card">
-          <h2 class="hd">Newsletter</h2>
+        <article class="card" id="newsletter">
+          <h2>Newsletter</h2>
           <p>Get a quick gameday morning email: kickoff time, weather, and new specials.</p>
-          <form class="nl" onsubmit="event.preventDefault(); alert('Thanks!');">
-            <input type="email" placeholder="you@example.com" required>
-            <button class="btn">Subscribe</button>
-          </form>
-          <p class="muted">We don’t sell your data. Unsubscribe anytime.</p>
-        </section>
+          <div class="form-row" style="margin-top:8px;">
+            <input type="email" placeholder="you@domain.com" aria-label="Email" />
+            <button class="btn" type="button">Subscribe</button>
+          </div>
+          <small class="muted">We don’t sell your data. Unsubscribe anytime.</small>
+        </article>
+
       </aside>
-    </section>
+    </main>
 
-    <!-- GUIDE -->
-    <section id="guide" class="card guide">
-      <div class="guide-head">
-        <h2 class="hd">Gameday Guide (Unofficial)</h2>
-        <div class="countdown" aria-live="polite">
-          <div class="blk"><span id="cdD">00</span><em>days</em></div>
-          <div class="blk"><span id="cdH">00</span><em>hrs</em></div>
-          <div class="blk"><span id="cdM">00</span><em>min</em></div>
-          <div class="blk"><span id="cdS">00</span><em>sec</em></div>
-        </div>
-      </div>
-      <div class="guide-grid">
-        <article><h3>Getting There</h3><ul>
-          <li>Rideshare or public lots; expect road closures near campus.</li>
-          <li>Plan 60–90 minutes for traffic and entry queues.</li>
-          <li>Pick a meetup spot in case phones die.</li>
-        </ul></article>
-        <article><h3>Entry & Bags</h3><ul>
-          <li>Many venues have clear-bag rules and metal detectors.</li>
-          <li>Leave large items, outside alcohol, and pointed umbrellas at home.</li>
-          <li>Always verify with the official event page before you go.</li>
-        </ul></article>
-        <article><h3>Food & Water</h3><ul>
-          <li>Many vendors are cashless—bring a card or mobile pay.</li>
-          <li>Hydrate early; find refill spots on concourses.</li>
-          <li>Family sections are great with kids; consider ear protection.</li>
-        </ul></article>
-        <article><h3>Accessibility</h3><ul>
-          <li>Check ADA parking, shuttle drop-offs, elevators, and seating.</li>
-          <li>Service animals typically permitted—follow venue guidance.</li>
-          <li>Contact accessibility office ahead for assistance.</li>
-        </ul></article>
-      </div>
-      <p class="muted">Independent fan resource. Not affiliated with any university, athletics program, conference, or governing body.</p>
-    </section>
-  </main>
+    <!-- Footer -->
+    <footer class="footer small">
+      <p>
+        Independent fan resource. Not affiliated with any university, athletics program, conference, or governing body.
+      </p>
+      <p class="small">
+        Weather by Open-Meteo · Schedule data via CollegeFootballData · Map data © OSM contributors · Places data © Foursquare
+      </p>
+    </footer>
+  </div>
 
-  <footer class="sitefoot" role="contentinfo">
-    <p>© 2025 HC Web Labs. Content licensed under
-      <a href="/LICENSE-CONTENT">CC BY-NC-ND 4.0</a> unless noted.
-      Code © HC Web Design Labs (all rights reserved).
-    </p>
-    <p>Independent, fan-operated site. Not affiliated with or endorsed by any university, athletics program, conference, or governing body.</p>
-    <p class="muted">
-      Weather by <a href="https://open-meteo.com/" rel="nofollow">Open-Meteo</a> •
-      Schedule data via <a href="https://collegefootballdata.com" rel="nofollow">CollegeFootballData</a> •
-      Map data © <a href="https://www.openstreetmap.org/copyright">OSM contributors</a> •
-      Places data © Foursquare
-    </p>
-  </footer>
-
-  <script type="module" src="assets/js/app.js"></script>
+  <!-- App code -->
+  <script type="module" src="/assets/js/app.js"></script>
 </body>
 </html>
