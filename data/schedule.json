@@ -1,97 +1,85 @@
 [
   {
-    "date": null,
-    "opponent": "TBD",
+    "date": "2025-08-30T16:00:00.000Z",
     "home": false,
-    "tv": "TBD",
+    "tv": null,
     "result": null,
     "venue": "Mercedes-Benz Stadium"
   },
   {
-    "date": null,
-    "opponent": "TBD",
+    "date": "2025-09-06T19:30:00.000Z",
     "home": false,
-    "tv": "TBD",
+    "tv": null,
     "result": null,
     "venue": "Neyland Stadium"
   },
   {
-    "date": null,
-    "opponent": "TBD",
+    "date": "2025-09-13T19:30:00.000Z",
     "home": false,
-    "tv": "TBD",
+    "tv": null,
     "result": null,
     "venue": "Neyland Stadium"
   },
   {
-    "date": null,
-    "opponent": "TBD",
+    "date": "2025-09-20T16:45:00.000Z",
     "home": false,
-    "tv": "TBD",
+    "tv": null,
     "result": null,
     "venue": "Neyland Stadium"
   },
   {
-    "date": null,
-    "opponent": "TBD",
+    "date": "2025-09-27T04:00:00.000Z",
     "home": false,
-    "tv": "TBD",
+    "tv": null,
     "result": null,
     "venue": "Davis Wade Stadium"
   },
   {
-    "date": null,
-    "opponent": "TBD",
+    "date": "2025-10-11T04:00:00.000Z",
     "home": false,
-    "tv": "TBD",
+    "tv": null,
     "result": null,
     "venue": "Neyland Stadium"
   },
   {
-    "date": null,
-    "opponent": "TBD",
+    "date": "2025-10-18T04:00:00.000Z",
     "home": false,
-    "tv": "TBD",
+    "tv": null,
     "result": null,
     "venue": "Bryant-Denny Stadium"
   },
   {
-    "date": null,
-    "opponent": "TBD",
+    "date": "2025-10-25T04:00:00.000Z",
     "home": false,
-    "tv": "TBD",
+    "tv": null,
     "result": null,
     "venue": "Kroger Field"
   },
   {
-    "date": null,
-    "opponent": "TBD",
+    "date": "2025-11-01T04:00:00.000Z",
     "home": false,
-    "tv": "TBD",
+    "tv": null,
     "result": null,
     "venue": "Neyland Stadium"
   },
   {
-    "date": null,
-    "opponent": "TBD",
+    "date": "2025-11-15T21:15:00.000Z",
     "home": false,
-    "tv": "TBD",
+    "tv": null,
     "result": null,
     "venue": "Neyland Stadium"
   },
   {
-    "date": null,
-    "opponent": "TBD",
+    "date": "2025-11-22T05:00:00.000Z",
     "home": false,
-    "tv": "TBD",
+    "tv": null,
     "result": null,
     "venue": "Ben Hill Griffin Stadium"
   },
   {
-    "date": null,
-    "opponent": "TBD",
+    "date": "2025-11-29T05:00:00.000Z",
     "home": false,
-    "tv": "TBD",
+    "tv": null,
     "result": null,
     "venue": "Neyland Stadium"
   }

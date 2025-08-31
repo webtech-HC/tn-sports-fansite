@@ -1,9 +1,9 @@
 {
-  "lastUpdated": "2025-08-31T11:58:14.893Z",
+  "lastUpdated": "2025-08-31T12:25:36.077Z",
   "providers": {
     "schedule": "CollegeFootballData",
     "weather": "Open-Meteo",
-    "places": null
+    "places": "Foursquare"
   },
   "year": 2025
 }
