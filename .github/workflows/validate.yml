@@ -1,19 +1,27 @@
+# .github/workflows/validate.yml
 name: Validate data JSON
+
 on:
-push:
-branches: [ main ]
-pull_request:
+  push:
+    branches: [ main ]
+  pull_request:
+
 permissions:
-contents: read
+  contents: read
+
 jobs:
-validate:
-runs-on: ubuntu-latest
-steps:
-- uses: actions/checkout@v4
-- uses: actions/setup-node@v4
-with:
-node-version: 20
-- name: Install validator deps
-run: npm i --no-save ajv@8 ajv-formats@2
-- name: Run validator
-run: node scripts/validate-data.js
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install validator deps
+        run: npm i --no-save ajv@8 ajv-formats@2
+
+      - name: Run validator
+        run: node scripts/validate-data.js
+
