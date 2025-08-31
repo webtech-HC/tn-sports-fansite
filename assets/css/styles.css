@@ -8,6 +8,8 @@
   --color-field-1:       #121D0B; /* canvas */
   --color-field-2:       #0C1A09; /* cards / wells */
 
+--bg-image: url("assets/img/bg.jpg"); /* update if you use a different path/name */
+  
   /* Text */
   --color-ink:           #F3F6F8;
   --color-ink-dim:       #C9D1D5;
@@ -16,6 +18,9 @@
   /* Dividers / strokes */
   --color-line:          #1E2A22;
   --color-line-soft:     #151C16;
+  
+  --gap: 20px;   /* spacing between widgets */
+  --pad: 18px;   /* inner card padding */
 
   /* UT Orange utility if you want a punchier variant */
   --color-ut-orange:     #FF8200;
@@ -45,11 +50,24 @@ a:focus-visible, button:focus-visible, .btn:focus-visible {
 }
 
 /* App background: deep field with a subtle vignette */
-body {
-  color: var(--color-ink);
+/* Fixed, non-repeating page background behind everything (iOS-friendly) */
+
+body{ background: none !important; }
+body::before{
+  content:"";
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  /* image at the back, subtle overlays on top for readability */
   background:
+    /* darken/top vignette – tweak alphas if you want less/more dim */
+    linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,.45)),
     radial-gradient(1200px 600px at 50% -200px, rgba(255,214,138,0.06), transparent 60%),
-    linear-gradient(180deg, var(--color-field-1), var(--color-field-0));
+    var(--bg-image);
+  background-repeat: no-repeat;
+  background-position: center top;
+  background-size: cover;
+  pointer-events: none;
 }
 
 /* Cards lean “field 2” with a faint border */
@@ -59,6 +77,12 @@ body {
   border: 1px solid var(--color-line-soft);
   box-shadow: 0 0 0 1px rgba(255,214,138,0.03) inset, 0 8px 24px rgba(0,0,0,0.35);
 }
+
+.card{
+  background: linear-gradient(180deg, rgba(255,255,255,0.012), rgba(0,0,0,0.08)), var(--color-field-2);
+  border: 1px solid var(--color-line);
+}
+
 
 /* Section headlines with a thin accent underline */
 .hrule, .card h2, .section h2 {
