@@ -9,12 +9,24 @@
 
 /* ============ Reset ============ */
 *{box-sizing:border-box}
-html,body{height:100%}
+
+/* Background — single layer, fixed, cover, no repeat */
+html, body { height: 100%; }
 body{
-  margin:0;
-  font: 14px/1.4 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  color:var(--ink-9);
-  background:#0d1411 url("../assets/imgs/tn-metallic-1.jpg") center / cover no-repeat fixed; /* no gradient, per request */
+  /* fallback color while image loads */
+  background-color: #0b1210;
+
+  /* correct path from assets/css/ -> ../.. -> imgs/ */
+  background-image: url('../../imgs/tn-metallic-1.jpg');
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
+
+  /* keep your base text styles */
+  font: 16px/1.55 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: var(--color-ink);
+  min-height: 100vh;
 }
 
 /* containers */
