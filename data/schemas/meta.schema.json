@@ -1,0 +1,22 @@
+{
+"$schema": "https://json-schema.org/draft/2020-12/schema",
+"$id": "meta.schema.json",
+"title": "Meta",
+"type": "object",
+"additionalProperties": false,
+"required": ["lastUpdated", "providers", "year"],
+"properties": {
+"lastUpdated": { "type": "string", "format": "date-time" },
+"providers": {
+"type": "object",
+"additionalProperties": false,
+"required": ["schedule", "weather", "places"],
+"properties": {
+"schedule": { "type": ["string", "null"] },
+"weather": { "type": ["string", "null"] },
+"places": { "type": ["string", "null"] }
+}
+},
+"year": { "type": "integer", "minimum": 2000 }
+}
+}
