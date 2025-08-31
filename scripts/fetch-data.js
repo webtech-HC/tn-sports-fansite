@@ -65,9 +65,10 @@ async function fetchCFBDSchedule(year = (new Date()).getFullYear()) {
 // B) Open-Meteo — 3-day forecast for Knoxville (no key)
 async function fetchWeather() {
   const lat = 35.9606, lon = -83.9207; // Knoxville
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-              `&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_mean` +
-              `&forecast_days=3&timezone=auto`;
+  const wxUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`
+  + `&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max`
+  + `&temperature_unit=fahrenheit&precipitation_unit=inch&windspeed_unit=mph`
+  + `&timezone=America/New_York`;
   const d = await safeFetch(url);
   const out = (d?.daily?.time || []).map((t, i) => ({
     date: t,
