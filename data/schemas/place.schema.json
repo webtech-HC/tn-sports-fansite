@@ -1,0 +1,16 @@
+{
+"$schema": "https://json-schema.org/draft/2020-12/schema",
+"$id": "place.schema.json",
+"title": "Place",
+"type": "object",
+"additionalProperties": false,
+"required": ["name"],
+"properties": {
+"name": { "type": "string", "minLength": 1 },
+"area": { "type": ["string", "null"], "default": null },
+"address": { "type": ["string", "null"], "default": null },
+"lat": { "type": ["number", "null"], "default": null },
+"lon": { "type": ["number", "null"], "default": null },
+"url": { "type": ["string", "null"], "format": "uri", "default": null }
+}
+}
