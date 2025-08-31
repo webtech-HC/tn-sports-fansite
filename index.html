@@ -6,175 +6,196 @@
   <title>TENNESSEE — Gameday Hub</title>
 
   <!-- CSS -->
-  <link rel="stylesheet" href="assets/css/styles.css?v=1" />
+  <link rel="stylesheet" href="assets/css/styles.css" />
 
-  <!-- Leaflet map CSS (CDN) -->
+  <!-- Leaflet (map) -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
     crossorigin=""
   />
-</head>
-<body>
-  <header class="site-header">
-    <div class="brand">
-      <h1 class="sr-only">Tennessee Gameday Hub</h1>
-      <div class="wordmark">TENNESSEE</div>
-      <nav class="nav">
-        <a href="#schedule">Schedule</a>
-        <a href="#specials">Specials</a>
-        <a href="#map">Map</a>
-        <a href="#guide">Guide</a>
-        <a class="btn btn-accent" href="https://forms.gle/" target="_blank" rel="noopener">Submit</a>
-      </nav>
-    </div>
-
-    <p class="lede">Fan-run. Unofficial. Built by fans for fans.</p>
-
-    <div class="toolbar">
-      <a class="chip" href="#schedule">View Schedule</a>
-      <a class="chip" href="#specials">Find Specials</a>
-      <a class="chip" href="https://forms.gle/" target="_blank" rel="noopener">Submit a Listing</a>
-      <button class="chip" id="addToCalendar">Add to Calendar</button>
-    </div>
-
-    <div class="databar">
-      <span id="countdown" aria-live="polite">Kickoff in 00 d : 00h : 00m : 00s</span>
-      <span class="sep">—</span>
-      <small>Data updated <span id="dataUpdated">—</span></small>
-    </div>
-  </header>
-
-  <main class="wrap">
-    <section class="grid">
-      <!-- Upcoming -->
-      <article class="card" id="upcoming-card">
-        <h2>Upcoming Game</h2>
-        <div id="upcoming">
-          <p><strong>Tennessee</strong> vs <span id="opp">Opponent</span></p>
-          <p><span id="dateTime">Date • Time</span></p>
-          <p>Venue: <span id="venue">Knoxville, TN</span></p>
-          <button class="btn btn-small" id="addToCalendar2">Add to Calendar</button>
-        </div>
-      </article>
-
-      <!-- Weather -->
-      <article class="card" id="weather-card">
-        <h2>Weather (3-day)</h2>
-        <ul class="wx" id="wx">
-          <!-- filled by app.js -->
-        </ul>
-        <small>Forecasts change—check again closer to kickoff.</small>
-      </article>
-
-      <!-- This Week can be curated / optional; keep section wrapper for layout -->
-      <article class="card" id="thisweek-card" aria-live="polite">
-        <h2>This Week in Knoxville</h2>
-        <ul id="thisWeekList"></ul>
-      </article>
-
-      <!-- Schedule -->
-      <article class="card wide" id="schedule">
-        <h2>Schedule & Results</h2>
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr><th>Date</th><th>Opponent</th><th>H/A</th><th>TV</th><th>Result</th></tr>
-            </thead>
-            <tbody id="scheduleBody"></tbody>
-          </table>
-        </div>
-        <small>Times/TV subject to change. Check official sources day-of.</small>
-      </article>
-
-      <!-- Map -->
-      <article class="card" id="map-card" aria-label="Map of nearby spots">
-        <h2>Map</h2>
-        <div id="map" class="map"></div>
-        <small>Pins show a sample of nearby food/drink/brunch spots. Data © Foursquare; Map © OpenStreetMap contributors.</small>
-      </article>
-
-      <!-- Specials -->
-      <article class="card wide" id="specials">
-        <h2>Featured Specials</h2>
-        <div id="specialsGrid" class="grid-sm"></div>
-        <small>Listings are community-submitted. Call ahead to confirm.</small>
-      </article>
-
-      <!-- Submit block -->
-      <article class="card">
-        <h2>Submit a Listing</h2>
-        <p>Restaurant, bar, shop, or event with a gameday special? Share it with fans.</p>
-        <a class="btn" href="https://forms.gle/" target="_blank" rel="noopener">Open form</a>
-      </article>
-
-      <!-- Newsletter block -->
-      <article class="card">
-        <h2>Newsletter</h2>
-        <p>Get a quick gameday morning email: kickoff time, weather, and new specials.</p>
-        <form action="#" onsubmit="return false" aria-label="Newsletter">
-          <input type="email" placeholder="you@email.com" aria-label="Email" />
-          <button class="btn btn-small" type="submit">Subscribe</button>
-        </form>
-        <small>We don’t sell your data. Unsubscribe anytime.</small>
-      </article>
-
-      <!-- Guide -->
-      <article class="card wide" id="guide">
-        <h2>Gameday Guide (Unofficial)</h2>
-        <div class="guide-cols">
-          <section>
-            <h3>Getting There</h3>
-            <ul>
-              <li>Rideshare or public lots; expect road closures near campus.</li>
-              <li>Plan 60–90 minutes for traffic and entry queues.</li>
-              <li>Pick a meetup spot in case phones die.</li>
-            </ul>
-          </section>
-          <section>
-            <h3>Food & Water</h3>
-            <ul>
-              <li>Many venues are cashless—bring a card or mobile pay.</li>
-              <li>Hydrate early; find refill spots on concourses.</li>
-              <li>Family sections are great with kids; consider ear protection.</li>
-            </ul>
-          </section>
-          <section>
-            <h3>Entry & Bags</h3>
-            <ul>
-              <li>Many venues have clear bag rules and metal detectors.</li>
-              <li>Leave large items, outside alcohol, and prohibited items at home.</li>
-              <li>Always verify with the official event page before you go.</li>
-            </ul>
-          </section>
-          <section>
-            <h3>Accessibility</h3>
-            <ul>
-              <li>Check ADA parking, shuttle drop-offs, elevators, and seating.</li>
-              <li>Service animals typically permitted—follow venue guidance.</li>
-              <li>Contact accessibility office ahead for assistance.</li>
-            </ul>
-          </section>
-        </div>
-      </article>
-    </section>
-  </main>
-
-  <footer class="site-footer wrap">
-    <small>
-      Independent, fan-operated site. Not affiliated with, or endorsed by, any university, athletics program, conference, or governing body.
-      <br />Weather by Open-Meteo • Schedule data via CollegeFootballData • Map data © OSM contributors • Places data © Foursquare
-    </small>
-  </footer>
-
-  <!-- JS (load Leaflet before app.js) -->
   <script
     defer
     src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin=""
   ></script>
-  <script defer src="assets/js/app.js?v=1"></script>
+</head>
+
+<body>
+  <!-- Top bar -->
+  <header class="site-header">
+    <div class="brand">TENNESSEE</div>
+    <nav class="top-nav">
+      <a href="#schedule">Schedule</a>
+      <a href="#specials">Specials</a>
+      <a href="#map">Map</a>
+      <a href="#guide">Guide</a>
+      <a class="btn btn-accent" href="https://forms.gle/" target="_blank" rel="noopener">Submit</a>
+    </nav>
+  </header>
+
+  <!-- Intro banner -->
+  <section class="hero">
+    <p>Fan-run. Unofficial. Built by fans for fans.</p>
+    <div class="actions">
+      <a class="btn" href="#schedule">View Schedule</a>
+      <a class="btn" href="#specials">Find Specials</a>
+      <a class="btn" href="https://forms.gle/" target="_blank" rel="noopener">Submit a Listing</a>
+      <button class="btn" id="addToCalendarBtn" type="button">Add to Calendar</button>
+    </div>
+    <p class="kickoff-line">
+      Kickoff in <span id="kickDays">00</span>d :
+      <span id="kickHours">00</span>h :
+      <span id="kickMins">00</span>m :
+      <span id="kickSecs">00</span>s
+      <span class="sep">—</span>
+      <small>Data updated — <span id="updatedAt">—</span></small>
+    </p>
+  </section>
+
+  <!-- Main layout: left grid + sticky right rail -->
+  <main class="layout">
+    <section class="grid-left">
+      <!-- Row 1 -->
+      <article class="card" id="scoreBox">
+        <header class="card-head">
+          <h3>Live Score Box</h3>
+          <span id="signalDot" class="signal-dot"></span>
+        </header>
+        <div class="card-body" id="scoreBody">
+          <p class="muted">Loading…</p>
+        </div>
+      </article>
+
+      <article class="card" id="upcoming">
+        <header class="card-head"><h3>Upcoming / Current Game</h3></header>
+        <div class="card-body">
+          <p><strong id="nextTeams">Tennessee vs —</strong></p>
+          <p id="nextWhen">Date • Time</p>
+          <p id="nextVenue">Venue —</p>
+          <button class="btn btn-small" id="addToCalendarBtn2" type="button">Add to Calendar</button>
+        </div>
+      </article>
+
+      <article class="card" id="rankCard">
+        <header class="card-head"><h3>Team Rank</h3></header>
+        <div class="card-body" id="rankBody">
+          <p class="muted">Rank data coming soon.</p>
+        </div>
+      </article>
+
+      <!-- Row 2 -->
+      <article class="card" id="schedule">
+        <header class="card-head"><h3>Schedule &amp; Results</h3></header>
+        <div class="card-body">
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr><th>Date</th><th>Opponent</th><th>H/A</th><th>TV</th><th>Result</th></tr>
+              </thead>
+              <tbody id="scheduleRows"></tbody>
+            </table>
+          </div>
+          <p class="small muted">Times/TV subject to change. Check official sources day-of.</p>
+          <button class="btn btn-small" id="toggleScheduleBtn" type="button" data-expanded="false">See full schedule</button>
+        </div>
+      </article>
+
+      <!-- Row 3 -->
+      <article class="card" id="wxCard">
+        <header class="card-head"><h3>Weather (3-day)</h3></header>
+        <ul class="list" id="wx"></ul>
+      </article>
+
+      <article class="card" id="placesCard">
+        <header class="card-head"><h3>Places to Stay</h3></header>
+        <div id="placesGrid" class="grid grid-tiles"></div>
+      </article>
+
+      <article class="card" id="specials">
+        <header class="card-head"><h3>Featured Specials</h3></header>
+        <div id="specialsGrid" class="grid grid-tiles"></div>
+        <p class="small muted">Listings are community-submitted. Call ahead to confirm.</p>
+      </article>
+
+      <!-- Guide -->
+      <section id="guide" class="card">
+        <header class="card-head"><h3>Gameday Guide (Unofficial)</h3></header>
+        <div class="guide-grid">
+          <div>
+            <h4>Getting There</h4>
+            <ul class="bullets">
+              <li>Rideshare or public lots; expect road closures near campus.</li>
+              <li>Plan 60–90 minutes for traffic and entry queues.</li>
+              <li>Pick a meetup spot in case phones die.</li>
+            </ul>
+          </div>
+          <div>
+            <h4>Food &amp; Water</h4>
+            <ul class="bullets">
+              <li>Many venues are cashless—bring a card or mobile pay.</li>
+              <li>Hydrate early; find refill spots on concourses.</li>
+              <li>Family sections are great with kids; consider ear protection.</li>
+            </ul>
+          </div>
+          <div>
+            <h4>Entry &amp; Bags</h4>
+            <ul class="bullets">
+              <li>Many venues have clear bag rules and metal detectors.</li>
+              <li>Leave large items, outside alcohol, and prohibited items at home.</li>
+              <li>Always verify with the official event page before you go.</li>
+            </ul>
+          </div>
+          <div>
+            <h4>Accessibility</h4>
+            <ul class="bullets">
+              <li>Check ADA parking, shuttle drop-offs, elevators, and seating.</li>
+              <li>Service animals typically permitted—follow venue guidance.</li>
+              <li>Contact accessibility office ahead for assistance.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <footer class="site-footer">
+        <p class="small muted">
+          Independent, fan-operated site. Not affiliated with or endorsed by any university,
+          athletics program, conference, or governing body.
+          Weather by Open-Meteo • Schedule data via CollegeFootballData •
+          Map data © OSM contributors • Places data © Foursquare
+        </p>
+      </footer>
+    </section>
+
+    <!-- Sticky Right Rail -->
+    <aside class="rail" aria-label="Right Rail">
+      <article class="card" id="miniMapCard">
+        <header class="card-head"><h3>Map</h3></header>
+        <div id="map" class="map"></div>
+        <p class="small muted">Pins show a sample of nearby food/drink/brunch spots. Data © Foursquare; Map © OpenStreetMap contributors.</p>
+      </article>
+
+      <article class="card">
+        <header class="card-head"><h3>Submit a Listing</h3></header>
+        <p>Restaurant, bar, shop, or event with a gameday special? Share it with fans.</p>
+        <a class="btn" href="https://forms.gle/" target="_blank" rel="noopener">Open form</a>
+      </article>
+
+      <article class="card">
+        <header class="card-head"><h3>Newsletter</h3></header>
+        <p>Get a quick gameday morning email: kickoff time, weather, and new specials.</p>
+        <form action="https://example.com/subscribe" method="post" class="inline-form">
+          <input type="email" name="email" required placeholder="you@email.com" />
+          <button class="btn btn-small" type="submit">Subscribe</button>
+        </form>
+        <p class="small muted">We don’t sell your data. Unsubscribe anytime.</p>
+      </article>
+    </aside>
+  </main>
+
+  <script type="module" src="assets/js/app.js"></script>
+  <noscript><p style="padding:1rem">This site needs JavaScript enabled.</p></noscript>
 </body>
 </html>
