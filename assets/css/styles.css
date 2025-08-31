@@ -1,19 +1,4 @@
-/* ===================================================================
-   Tennessee Gameday Hub — styles.css
-   Palette: Metallic Orange, Off-white, Field Green
-   =================================================================== */
-
-/* Reset & base ----------------------------------------------------- */
-*, *::before, *::after { box-sizing: border-box; }
-html, body { height: 100%; }
-html { -webkit-text-size-adjust: 100%; }
-body {
-  margin: 0;
-  font: 16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
-  color: var(--color-ink);
-}
-
-/* Theme tokens ----------------------------------------------------- */
+/* ========== Theme Vars ========== */
 :root {
   /* Brand & field */
   --color-accent:      #C77F1C; /* metallic orange */
@@ -32,175 +17,139 @@ body {
   --color-line:        #1E2A22;
   --color-line-soft:   #151C16;
 
-  /* Layout */
-  --gap: 20px;     /* global spacing between widgets (restored) */
-  --pad: 18px;     /* card padding */
-  --r:   16px;     /* radius */
+  /* Spacing */
+  --pad: 14px;
+  --gap: 14px;       /* NEW — used across grids/cards */
 
-  /* Optional punchy UT orange */
-  --color-ut-orange:   #FF8200;
+  /* Shadow */
+  --shadow-lg: 0 8px 24px rgba(0,0,0,.35);
+  --shadow-inset: 0 0 0 1px rgba(255,214,138,.03) inset;
+
+  /* Background image (path is relative to this CSS file) */
+  --bg-image: url("../imgs/tn-metallic-1.jpg");
+
+  /* Optional punchy variant */
+  --color-ut-orange: #FF8200;
 }
 
-/* Background (fixed, no-repeat, cover) ----------------------------- */
+/* ========== Base ========== */
+* { box-sizing: border-box; }
+html, body { height: 100%; }
 body {
+  margin: 0;
+  color: var(--color-ink);
+
+  /* Fixed, cover background with soft overlays */
   background:
-    radial-gradient(1200px 600px at 50% -200px, rgba(255,214,138,0.06), transparent 60%),
-    linear-gradient(180deg, rgba(0,0,0,0.40), rgba(0,0,0,0.70)),
-    url('/assets/imgs/tn-metallic-1.jpg') center top / cover no-repeat fixed;
+    radial-gradient(1200px 600px at 50% -200px, rgba(255,214,138,.06), transparent 60%),
+    linear-gradient(180deg, var(--color-field-1), var(--color-field-0)),
+    var(--bg-image);
+  background-repeat: no-repeat, no-repeat, no-repeat;
+  background-size: auto, auto, cover;       /* image covers */
+  background-attachment: scroll, scroll, fixed; /* image fixed */
+  background-position: center top, center top, center top;
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font: 15px/1.5 system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-/* Typography ------------------------------------------------------- */
-h1, h2, h3, h4 {
-  margin: 0 0 6px 0;
-  line-height: 1.2;
-  letter-spacing: 0.5px;
-}
-h1 { font-size: clamp(28px, 4vw, 44px); font-weight: 800; }
-h2 { font-size: clamp(18px, 2.2vw, 22px); font-weight: 700; }
-h3 { font-size: 16px; font-weight: 700; }
+/* Container */
+.wrap { width: min(1180px, 94%); margin: 0 auto; padding: 24px 0; }
 
-p { margin: 0 0 10px; color: var(--color-ink-dim); }
-small, .muted { color: var(--color-ink-muted); font-size: 12px; }
-a { color: var(--color-accent-2); text-decoration: none; }
-a:hover { color: var(--color-accent); text-decoration: underline; }
+/* ========== Layout helpers ========== */
+.grid        { display: grid; gap: var(--gap); }
+.grid-2      { grid-template-columns: 2fr 1fr; }
+.stack       { display: grid; gap: var(--gap); }
 
-/* Utilities -------------------------------------------------------- */
-.wrap { max-width: 1100px; margin: 24px auto; padding: 0 16px; display: grid; gap: var(--gap); }
-.row-quick { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--gap); }
-.grid-main { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--gap); }
-.left  { grid-column: span 8; display: grid; gap: var(--gap); }
-.right { grid-column: span 4; display: grid; gap: var(--gap); }
-
-.badge {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: rgba(255,255,255,0.06);
-  color: var(--color-ink-dim);
-  border: 1px solid var(--color-line-soft);
-  font-size: 12px;
+/* Tighten on mobile */
+@media (max-width: 900px){
+  .grid-2 { grid-template-columns: 1fr; }
 }
 
-/* Masthead --------------------------------------------------------- */
-.mast {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: var(--gap);
-  margin-top: 8px;
+/* ========== Header ========== */
+.site-header {
+  position: sticky; top: 0; z-index: 10;
+  background: linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.20));
+  border-bottom: 1px solid var(--color-line-soft);
+  backdrop-filter: blur(4px);
 }
-.brand h1 {
-  text-shadow: 0 0 16px rgba(255,214,138,0.15);
-  letter-spacing: 1px;
+.brand {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-weight: 800; letter-spacing: .04em; font-size: 28px; text-decoration: none;
+  color: var(--color-ink);
 }
-.top-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.topnav a { color: var(--color-ink-dim); margin-left: 14px; text-decoration: none; }
+.topnav a:hover { color: var(--color-accent-2); }
 
-/* Cards ------------------------------------------------------------ */
+/* ========== Cards & UI ========== */
 .card, .well, .panel {
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.012), rgba(0,0,0,0.06)),
-    var(--color-field-2);
+  background: linear-gradient(180deg, rgba(255,255,255,.012), rgba(0,0,0,.06)), var(--color-field-2);
   border: 1px solid var(--color-line-soft);
-  border-radius: var(--r);
-  padding: var(--pad);
-  box-shadow: 0 0 0 1px rgba(255,214,138,0.03) inset, 0 8px 24px rgba(0,0,0,0.35);
+  box-shadow: var(--shadow-inset), var(--shadow-lg);
+  border-radius: 14px;
+  padding: calc(var(--pad) + 2px);
+  /* vertical rhythm between stacked cards */
+  margin: 0;
 }
-.card h2 {
+.card + .card,
+.panel + .panel,
+.well + .well { margin-top: var(--gap); }
+
+h1, h2, h3 { margin: 0 0 10px; }
+h2 { font-size: 20px; }
+p  { margin: 0 0 10px; color: var(--color-ink-dim); }
+
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td { padding: 8px 10px; border-bottom: 1px solid var(--color-line-soft); }
+.table thead th { color: var(--color-ink-muted); font-weight: 600; }
+
+.list { list-style: none; margin: 0; padding: 0; }
+.list li { padding: 6px 0; border-bottom: 1px dashed var(--color-line-soft); }
+.list li:last-child { border-bottom: 0; }
+
+.bullets { margin: 0; padding-left: 18px; }
+.bullets li { margin: 6px 0; color: var(--color-ink-dim); }
+
+/* Divider-ish header underline */
+.card h2, .section h2 {
+  border-bottom: 1px solid var(--color-line);
+  box-shadow: 0 2px 0 0 rgba(199,127,28,.20);
   padding-bottom: 8px;
   margin-bottom: 12px;
-  border-bottom: 1px solid var(--color-line);
-  box-shadow: 0 2px 0 0 rgba(199,127,28,0.20);
 }
 
-/* Button styles ---------------------------------------------------- */
-.btn,
-button.btn,
-a.btn {
-  display: inline-flex;
-  align-items: center; justify-content: center;
-  height: 34px; padding: 0 12px;
-  font-weight: 700; font-size: 14px;
-  border-radius: 10px;
-  border: 1px solid rgba(0,0,0,0.35);
-  background: linear-gradient(180deg, var(--color-accent-2), var(--color-accent));
-  color: #1A0E00;
-  cursor: pointer;
-  box-shadow:
-    0 0 12px rgba(255,214,138,0.25),
-    inset 0 1px 0 rgba(255,255,255,0.25),
-    inset 0 -1px 0 rgba(0,0,0,0.15);
-  text-decoration: none;
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 12px; border-radius: 10px; cursor: pointer;
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.06));
+  border: 1px solid rgba(0,0,0,.4); color: var(--color-ink);
+  text-decoration: none; user-select: none;
 }
 .btn:hover { filter: brightness(1.05); }
-.btn.ghost {
-  background: rgba(255,255,255,0.04);
-  color: var(--color-ink-dim);
-  border-color: var(--color-line);
-  box-shadow: none;
+
+.btn-primary {
+  background: linear-gradient(180deg, var(--color-accent-2), var(--color-accent));
+  color: #1A0E00;
+  box-shadow:
+    0 0 12px rgba(255,214,138,.25),
+    inset 0 1px 0 rgba(255,255,255,.25),
+    inset 0 -1px 0 rgba(0,0,0,.15);
 }
 
-/* Tables ----------------------------------------------------------- */
-.table { width: 100%; border-collapse: collapse; }
-.table th, .table td {
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--color-line-soft);
-  font-size: 14px;
-}
-.table th { text-align: left; color: var(--color-ink-muted); font-weight: 700; }
-.table tbody tr:hover { background: rgba(255,255,255,0.03); }
+/* Tiny “glow” accent utility */
+.glow { text-shadow: 0 0 12px rgba(255,214,138,.45); color: var(--color-accent-2); }
 
-/* Weather compact list --------------------------------------------- */
-.wx { width: 100%; border-collapse: collapse; }
-.wx td, .wx th { padding: 6px 8px; border-bottom: 1px solid var(--color-line-soft); font-size: 14px; }
-.wx th { color: var(--color-ink-muted); font-weight: 700; }
+/* ========== Hero ========== */
+.hero .kicker { color: var(--color-ink-muted); margin-bottom: 10px; }
+.hero .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.hero .meta { color: var(--color-ink-muted); }
 
-/* Countdown -------------------------------------------------------- */
-.countdown { display: inline-grid; grid-auto-flow: column; gap: 6px; align-items: center; }
-.countdown .slot {
-  min-width: 36px; text-align: center;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid var(--color-line-soft);
-  border-radius: 10px; padding: 6px 8px;
-  font-weight: 800; letter-spacing: 0.5px;
-}
+/* ========== Map ========== */
+#map { width: 100%; height: 260px; }
 
-/* Map -------------------------------------------------------------- */
-#mapCanvas { height: 260px; border-radius: 12px; overflow: hidden; }
+/* ========== Footer ========== */
+.site-footer { color: var(--color-ink-muted); padding-bottom: 48px; }
+.site-footer a { color: var(--color-accent-2); }
 
-/* Forms ------------------------------------------------------------ */
-input[type="email"], input[type="text"] {
-  width: 100%;
-  height: 36px;
-  border-radius: 10px;
-  padding: 8px 10px;
-  color: var(--color-ink);
-  background: rgba(255,255,255,0.06);
-  border: 1px solid var(--color-line-soft);
-}
-input::placeholder { color: var(--color-ink-muted); }
-.form-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
-
-/* Footer ----------------------------------------------------------- */
-.footer {
-  color: var(--color-ink-muted);
-  font-size: 12px;
-  padding: 16px 0 32px;
-  border-top: 1px solid var(--color-line-soft);
-}
-
-/* Misc utilities --------------------------------------------------- */
-.glow { color: var(--color-accent-2); text-shadow: 0 0 12px rgba(255,214,138,0.45); }
-.center { text-align: center; }
-.right-align { text-align: right; }
-.small { font-size: 12px; }
-
-/* Responsive ------------------------------------------------------- */
-@media (max-width: 960px) {
-  .left, .right { grid-column: 1 / -1; }
-  .wrap { margin-top: 16px; }
-}
-@media (max-width: 640px) {
-  .mast { grid-template-columns: 1fr; }
-  .top-actions { justify-content: flex-start; }
-  .countdown .slot { min-width: 30px; }
-}
