@@ -34,7 +34,7 @@ body{
 
   /* background image cover/fixed with darkening gradient */
   background:
-    url('/assets/imgs/tn-metallic-1.jpg') center center / cover fixed no-repeat;
+    url('./assets/imgs/tn-metallic-1.jpg') center center / cover fixed no-repeat;
 }
 
 .wrap{ width:min(1200px, 100% - 32px); margin-inline:auto; }
