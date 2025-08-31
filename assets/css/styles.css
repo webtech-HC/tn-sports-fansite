@@ -34,10 +34,7 @@ body{
 
   /* background image cover/fixed with darkening gradient */
   background:
-    url('/assets/imgs/tn-metallic-1.jpg') center / cover fixed no-repeat,
-    radial-gradient(1200px 600px at 50% -100px, rgba(255,166,43,.10), transparent 60%),
-    linear-gradient(180deg, rgba(0,0,0,.72), rgba(0,0,0,.9));
-  background-blend-mode: multiply, normal, normal;
+    url('/assets/imgs/tn-metallic-1.jpg') center center / cover fixed no-repeat;
 }
 
 .wrap{ width:min(1200px, 100% - 32px); margin-inline:auto; }
