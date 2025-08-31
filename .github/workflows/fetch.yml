@@ -1,9 +1,12 @@
 name: Refresh data
 
 on:
+  workflow_dispatch: {}
   schedule:
-    - cron: "*/30 * * * *"   # every 30 minutes (UTC)
-  workflow_dispatch: {}       # allow manual runs
+    # Every 30 minutes as a baseline (UTC)
+    - cron: "*/30 * * * *"
+    # Extra frequent on Saturdays (UTC ~ gameday), every 10 minutes 12:00–23:59 UTC
+    - cron: "*/10 12-23 * * 6"
 
 permissions:
   contents: write
@@ -21,19 +24,23 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+
+      - name: Install deps for scripts
+        run: npm i --no-save ajv@8 ajv-formats@2
 
       - name: Fetch & build data JSON
-        run: node --trace-warnings scripts/fetch-data.js
         env:
           CFBD_API_KEY: ${{ secrets.CFBD_API_KEY }}
           FSQ_API_KEY:  ${{ secrets.FSQ_API_KEY }}
+        run: node scripts/fetch-data.js
+
+      - name: Validate JSON
+        run: node scripts/validate-data.js
 
       - name: Commit updated JSON
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git pull --rebase || true
           git add data/*.json || true
           if git diff --cached --quiet; then
             echo "No changes"
