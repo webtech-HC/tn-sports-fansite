@@ -1,7 +1,17 @@
 {
-"$schema": "https://json-schema.org/draft/2020-12/schema",
-"$id": "specials.schema.json",
-"title": "Specials (array)",
-"type": "array",
-"items": { "$ref": "./special.schema.json" }
+  "$id": "specials.schema.json",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["title"],
+    "properties": {
+      "title": { "type": "string", "minLength": 1 },
+      "biz":   { "type": ["string", "null"] },
+      "area":  { "type": ["string", "null"] },
+      "time":  { "type": ["string", "null"] },
+      "time_window": { "type": ["string", "null"] },
+      "link":  { "type": ["string", "null"], "format": "uri" }
+    },
+    "additionalProperties": true
+  }
 }
