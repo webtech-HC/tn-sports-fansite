@@ -1,299 +1,219 @@
-/* app.js — Tennessee Fansite UI glue (browser-only)
-   Assumes static JSON written by Actions:
-   /data/next.json, /data/schedule.json, /data/weather.json, /data/places.json, /data/specials.json
-*/
+/* -----------------------------------------------------------
+   Client-side app for Tennessee fansite (GitHub Pages-safe)
+   ----------------------------------------------------------- */
 
-const PATH_NEXT     = '/data/next.json';
-const PATH_SCHEDULE = '/data/schedule.json';
-const PATH_WEATHER  = '/data/weather.json';
-const PATH_PLACES   = '/data/places.json';
-const PATH_SPECIALS = '/data/specials.json';
+/* ---------- Path resolution (fix 404s under /tn-sports-fansite/) ---------- */
+const BASE_HREF = document.querySelector('base')?.href || document.baseURI;
+const DATA_BASE = new URL('data/', BASE_HREF);
 
-// Knoxville fallback
-const KNOX = [35.9606, -83.9207];
+const NEXT_JSON     = new URL('next.json',     DATA_BASE).href;
+const SCHEDULE_JSON = new URL('schedule.json', DATA_BASE).href;
+const WEATHER_JSON  = new URL('weather.json',  DATA_BASE).href;
+const PLACES_JSON   = new URL('places.json',   DATA_BASE).href;
+const SPECIALS_JSON = new URL('specials.json', DATA_BASE).href;
+const META_JSON     = new URL('meta.json',     DATA_BASE).href;
 
-/* ================ Helpers ================ */
-const $ = (sel, root=document) => root.querySelector(sel);
+const getJSON = async (url) => {
+  const r = await fetch(url, { cache: 'no-store' });
+  if (!r.ok) throw new Error(`Fetch failed ${r.status} for ${url}`);
+  return r.json();
+};
 
-function fmtDate(d){
-  // Sat Sep 6, 3:30 PM
-  return new Date(d).toLocaleString([], { weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+/* ---------- Helpers ---------- */
+const $  = (sel) => document.querySelector(sel);
+const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+const fmtDate = (dStr) => {
+  try {
+    const d = new Date(dStr);
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  } catch { return dStr; }
+};
+const fmtDateTime = (dStr) => {
+  try {
+    const d = new Date(dStr);
+    const date = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    const time = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+    return `${date} • ${time}`;
+  } catch { return dStr; }
+};
+
+const setSignal = (status) => {
+  const el = $('#js-signal');
+  el.classList.remove('red','yellow','green');
+  el.classList.add(status);
+};
+
+/* ---------- UI builders ---------- */
+function renderSchedule(rows = []) {
+  const tb = $('#js-schedule tbody');
+  tb.innerHTML = '';
+  rows.forEach(r => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${fmtDate(r.date)}</td>
+      <td>${r.opponent || '—'}</td>
+      <td>${r.home === true ? 'H' : r.home === false ? 'A' : '—'}</td>
+      <td>${r.tv ?? '—'}</td>
+      <td>${r.result ?? '—'}</td>
+    `;
+    tb.appendChild(tr);
+  });
 }
-function fmtDay(d){
-  return new Date(d).toLocaleDateString([], { weekday:'short' });
-}
-function fmtHILO(n){
-  return Math.round(n);
-}
-function setUpdated(){
-  const t = new Date().toLocaleString([], { dateStyle:'medium', timeStyle:'short' });
-  $('#updatedAt')?.replaceChildren(t);
-  $('#updatedAt2')?.replaceChildren(t);
+
+function renderWeather(list = []) {
+  const ul = $('#js-weather');
+  ul.innerHTML = '';
+  list.slice(0, 3).forEach(w => {
+    const li = document.createElement('li');
+    li.textContent = `${new Date(w.date).toLocaleDateString(undefined, { weekday: 'short' })} — Hi ${Math.round(w.hi)}° Lo ${Math.round(w.lo)}°  ${w.precip ?? 0}%`;
+    ul.appendChild(li);
+  });
 }
 
-/* ================ Countdown (optional basic) ================ */
-function startCountdown(nextIso){
-  const el = $('#kickoffClock');
-  if(!el || !nextIso) return;
-  function tick(){
-    const now = new Date();
-    const diff = new Date(nextIso) - now;
-    if(diff <= 0){
-      el.textContent = 'Kickoff in 0 days 0 hours 0 minutes';
-      return;
-    }
-    const mins = Math.floor(diff/60000);
-    const days = Math.floor(mins/1440);
-    const hours = Math.floor((mins%1440)/60);
-    const m = mins%60;
-    el.textContent = `Kickoff in ${days}d ${hours}h ${m}m`;
-  }
-  tick();
-  setInterval(tick, 60*1000);
-}
-
-/* ================ Live score signal ================ */
-function setScoreSignal(nextIso){
-  const dot = $('#scoreDot');
-  const msg = $('#scoreMsg');
-  if(!dot) return;
-
-  if(!nextIso){
-    dot.dataset.state = 'red';
-    msg.textContent = 'No game info.';
+function renderSpecials(items = []) {
+  const box = $('#js-specials');
+  box.innerHTML = '';
+  if (!items.length) {
+    box.innerHTML = `<div class="muted">No specials yet.</div>`;
     return;
   }
+  items.forEach(s => {
+    const el = document.createElement('div');
+    el.className = 'item';
+    el.innerHTML = `
+      <h4>${s.title}</h4>
+      <div class="muted">${[s.biz, s.area, s.time_window].filter(Boolean).join(' • ')}</div>
+      ${s.link ? `<div><a class="btn pill" href="${s.link}" target="_blank" rel="noopener">Details</a></div>` : ''}
+    `;
+    box.appendChild(el);
+  });
+}
+
+/* ---------- Map ---------- */
+let map;
+function initMap() {
+  if (map) return;
+  // Knoxville default
+  map = L.map('map', { scrollWheelZoom: false }).setView([35.9606, -83.9207], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19, attribution: '&copy; OpenStreetMap'
+  }).addTo(map);
+}
+function addPlaceMarkers(places = []) {
+  if (!map) initMap();
+  places.forEach(p => {
+    if (typeof p.lat === 'number' && typeof p.lng === 'number') {
+      L.marker([p.lat, p.lng]).addTo(map)
+        .bindPopup(`<strong>${p.name || 'Place'}</strong><br>${p.formatted_address || ''}`);
+    }
+  });
+}
+
+/* ---------- Next / Live logic ---------- */
+function computeSignal(next) {
+  // next: { date: ISO8601, opponent, home, tv, venue } or {}
+  if (!next || !next.date) { setSignal('red'); return { text: 'No upcoming game found.', venue: '' }; }
 
   const now = new Date();
-  const start = new Date(nextIso);
+  const ko  = new Date(next.date);
+  const end = new Date(ko.getTime() + 4 * 60 * 60 * 1000); // rough 4h window
 
-  // crude end: kickoff + 5 hours, covers OT; refine later if live scoring added
-  const end = new Date(start.getTime() + 5*60*60*1000);
-
-  const isSameCalendarDay = start.toDateString() === now.toDateString();
-
-  if(now >= start && now <= end){
-    dot.dataset.state = 'green';
-    msg.textContent = 'Game in progress.';
-  } else if(isSameCalendarDay && now < start){
-    dot.dataset.state = 'yellow';
-    msg.textContent = 'Gameday — awaiting kickoff.';
+  let text = `Opponent — ${fmtDateTime(next.date)} ${next.home ? 'Home' : 'Away'}`;
+  if (now < ko && now.toDateString() === ko.toDateString()) {
+    setSignal('yellow'); // game day, before kickoff
+  } else if (now >= ko && now <= end) {
+    setSignal('green'); // in progress window
+    text = `Tennessee vs ${next.opponent || 'Opponent'} — In progress`;
+    $('#js-live-text').textContent = 'Game in progress.';
+  } else if (now < ko) {
+    setSignal('red'); // not game day yet
   } else {
-    dot.dataset.state = 'red';
-    msg.textContent = 'No game in progress.';
+    setSignal('red'); // game over
   }
+
+  return {
+    text: `Tennessee vs ${next.opponent || 'Opponent'} — ${fmtDateTime(next.date)}`,
+    venue: next.venue || ''
+  };
 }
 
-/* ================ Map ================ */
-function initMap(){
-  const mapEl = $('#map');
-  if(!mapEl) return null;
-
-  const map = L.map('map', { scrollWheelZoom:false }).setView(KNOX, 13);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution:'&copy; OpenStreetMap contributors'
-  }).addTo(map);
-  return map;
-}
-
-/* ================ Data paint: Upcoming ================ */
-async function paintUpcoming(){
-  try{
-    const next = await fetch(PATH_NEXT, {cache:'no-store'}).then(r => r.json()).catch(() => null);
-    const el = $('#nextLine');
-    const venueEl = $('#nextVenue');
-
-    if(!next || !next.date || !next.opponent){
-      el.textContent = 'No upcoming game found.';
-      return null;
-    }
-
-    const when = fmtDate(next.date);
-    const ha = next.home === true ? 'Home' : next.home === false ? 'Away' : '—';
-    el.textContent = `Tennessee vs ${next.opponent} — ${when} (${ha})`;
-    venueEl.textContent = next.venue ? `Venue: ${next.venue}` : '';
-
-    // kickoff utilities
-    startCountdown(next.date);
-    setScoreSignal(next.date);
-
-    // Add to calendar (basic .ics)
-    const btn = $('#addToCalendar');
-    if(btn){
-      btn.onclick = () => {
-        const dt = new Date(next.date);
-        const dtEnd = new Date(dt.getTime() + 3*60*60*1000);
-        const ics =
-`BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//HC Web Labs//TN Fansite//EN
-BEGIN:VEVENT
-UID:${dt.getTime()}@tn-fansite
-DTSTAMP:${toICS(new Date())}
-DTSTART:${toICS(dt)}
-DTEND:${toICS(dtEnd)}
-SUMMARY:Tennessee vs ${next.opponent}
-LOCATION:${(next.venue||'').replace(/,/g,'\\,')}
-DESCRIPTION:TN Gameday
-END:VEVENT
-END:VCALENDAR`;
-        const blob = new Blob([ics], {type:'text/calendar'});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = `tennessee-${dt.toISOString().slice(0,10)}.ics`;
-        document.body.appendChild(a); a.click(); a.remove();
-        URL.revokeObjectURL(url);
-      };
-    }
-
-    return next.date;
-  }catch(e){
-    console.error('upcoming error', e);
-    return null;
-  }
-}
-function toICS(d){
-  // yyyymmddThhmmssZ
-  return new Date(d).toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z');
-}
-
-/* ================ Data paint: Schedule ================ */
-async function paintSchedule(){
-  const tbody = $('#schedRows');
-  const btn = $('#schedMore');
-  if(!tbody) return;
-
-  try{
-    let rows = await fetch(PATH_SCHEDULE, {cache:'no-store'}).then(r => r.json()).catch(() => []);
-    // sort defensive
-    rows = (rows||[]).slice().sort((a,b) => new Date(a.date) - new Date(b.date));
-
-    // render with "show more" (initial 3)
-    let shown = 3;
-    const render = () => {
-      tbody.innerHTML = rows.slice(0, shown).map(g => {
-        const ha = g.home === true ? 'H' : g.home === false ? 'A' : '—';
-        const tv = g.tv ?? 'TBD';
-        const res = g.result ?? '—';
-        return `<tr>
-          <td>${new Date(g.date).toLocaleDateString([], {month:'short', day:'2-digit', year:'numeric'})}</td>
-          <td>${escapeHtml(g.opponent || '—')}</td>
-          <td>${ha}</td>
-          <td>${escapeHtml(tv)}</td>
-          <td>${escapeHtml(res)}</td>
-        </tr>`;
-      }).join('');
-      if(btn){
-        if(shown >= rows.length){ btn.style.display='none'; }
-        else { btn.style.display='inline-flex'; btn.textContent = `Show ${Math.min(3, rows.length-shown)} more`; }
-      }
-    };
-    render();
-
-    btn?.addEventListener('click', () => { shown = Math.min(shown+3, rows.length); render(); });
-  }catch(e){
-    console.error('schedule error', e);
-  }
-}
-
-/* ================ Data paint: Weather (rail) ================ */
-async function paintWeather(){
-  const list = $('#wxList');
-  if(!list) return;
-
-  try{
-    const data = await fetch(PATH_WEATHER, {cache:'no-store'}).then(r => r.json()).catch(() => []);
-    const rows = (data||[]).slice(0,3).map(x => {
-      const hi = fmtHILO(x.hi), lo = fmtHILO(x.lo), pr = Math.round(x.precip*10)/10;
-      return `<li><span>${fmtDay(x.date)}</span><span>Hi ${hi}° Lo ${lo}° &nbsp; ${pr}%</span></li>`;
-    }).join('');
-    list.innerHTML = rows || `<li class="muted">No forecast.</li>`;
-  }catch(e){
-    console.error('weather error', e);
-  }
-}
-
-/* ================ Data paint: Specials ================ */
-async function paintSpecials(){
-  const grid = $('#specialsGrid');
-  if(!grid) return;
-
-  try{
-    const list = await fetch(PATH_SPECIALS, {cache:'no-store'}).then(r => r.json()).catch(() => []);
-    if(!list || !list.length){
-      grid.innerHTML = `<div class="muted">No specials yet.</div>`;
-      return;
-    }
-    grid.innerHTML = list.map(s => {
-      const title = escapeHtml(s.title || `${s.biz||''} Special`);
-      const biz = escapeHtml(s.biz || '');
-      const area = escapeHtml(s.area || '');
-      const when = escapeHtml(s.time || s.time_window || '');
-      const link = s.link ? `<a href="${s.link}" target="_blank" rel="noopener">Details</a>` : '';
-      return `<article class="card">
-        <header><h3 class="tiny">${title}</h3></header>
-        <div class="card-body">
-          ${biz ? `<div class="small">${biz}${area? ' — '+area: ''}</div>` : ''}
-          ${when ? `<div class="tiny muted">${when}</div>` : ''}
-          <div class="mt-1">${link}</div>
-        </div>
-      </article>`;
-    }).join('');
-  }catch(e){
-    console.error('specials error', e);
-  }
-}
-
-/* ================ Data paint: Places (simple list) ================ */
-async function paintPlaces(map){
-  const ul = $('#placesList');
-  const empty = $('#placesEmpty');
-  if(!ul) return;
-
-  try{
-    const places = await fetch(PATH_PLACES, {cache:'no-store'}).then(r => r.json()).catch(() => []);
-    if(!places || !places.length){
-      empty.style.display = 'block';
-      return;
-    }
-    empty.style.display = 'none';
-    ul.innerHTML = places.slice(0,8).map(p => {
-      const n = escapeHtml(p.name||'Place');
-      const a = escapeHtml(p.formatted_address || p.address || '');
-      return `<li>${n}<div class="tiny muted">${a}</div></li>`;
-    }).join('');
-
-    // optional map markers
-    if(map){
-      places.slice(0,20).forEach(p => {
-        if(typeof p.lat === 'number' && typeof p.lng === 'number'){
-          L.marker([p.lat, p.lng]).addTo(map).bindPopup(`<strong>${escapeHtml(p.name||'')}</strong>`);
-        }
-      });
-    }
-  }catch(e){
-    console.error('places error', e);
-  }
-}
-
-/* ================ Utilities ================ */
-function escapeHtml(s=''){
-  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
-/* ================ Boot ================ */
+/* ---------- Boot ---------- */
 (async function boot(){
-  setUpdated();
+  try {
+    const [meta, next, schedule, weather, places, specials] = await Promise.all([
+      getJSON(META_JSON).catch(()=>({})),
+      getJSON(NEXT_JSON).catch(()=>({})),
+      getJSON(SCHEDULE_JSON).catch(()=>([])),
+      getJSON(WEATHER_JSON).catch(()=>([])),
+      getJSON(PLACES_JSON).catch(()=>([])),
+      getJSON(SPECIALS_JSON).catch(()=>([]))
+    ]);
 
-  const map = initMap();
-  const nextIso = await paintUpcoming();
-  await Promise.all([
-    paintSchedule(),
-    paintWeather(),
-    paintSpecials(),
-    paintPlaces(map),
-  ]);
+    // Header: last updated
+    if (meta?.lastUpdated) {
+      $('#js-updated').textContent = `Data updated ${new Date(meta.lastUpdated).toLocaleString()}`;
+    }
 
-  // Re-stamp updated time each minute (optional)
-  setInterval(setUpdated, 60*1000);
+    // Next / Live
+    const info = computeSignal(next);
+    $('#js-next-line').textContent = info.text;
+    $('#js-next-venue').textContent = info.venue ? `Venue: ${info.venue}` : '';
+
+    // Add to calendar
+    $('#js-add-cal').addEventListener('click', () => {
+      if (!next?.date) return;
+      const start = new Date(next.date);
+      const end   = new Date(start.getTime() + 3 * 60 * 60 * 1000);
+      const title = encodeURIComponent(`Tennessee vs ${next.opponent || 'Opponent'}`);
+      const details = encodeURIComponent('Added from TN Fansite');
+      const location = encodeURIComponent(next.venue || 'Neyland Stadium');
+      const s = start.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z');
+      const e = end.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z');
+      const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${s}/${e}&details=${details}&location=${location}`;
+      window.open(url, '_blank', 'noopener');
+    });
+
+    // Schedule
+    renderSchedule(Array.isArray(schedule) ? schedule : []);
+
+    // Weather (3-day)
+    renderWeather(Array.isArray(weather) ? weather : []);
+
+    // Places (list + markers)
+    const placesList = $('#js-places');
+    placesList.innerHTML = '';
+    (Array.isArray(places) ? places : []).forEach(p => {
+      const li = document.createElement('li');
+      li.textContent = `${p.name || 'Place'} — ${p.formatted_address || ''}`;
+      placesList.appendChild(li);
+    });
+    initMap();
+    addPlaceMarkers(Array.isArray(places) ? places : []);
+
+    // Specials
+    renderSpecials(Array.isArray(specials) ? specials : []);
+
+    // “Show more” on schedule (progressive reveal)
+    const revealSize = 3;
+    const allRows = $('#js-schedule tbody').querySelectorAll('tr');
+    allRows.forEach((tr, i) => { tr.style.display = (i < revealSize ? '' : 'none'); });
+    const more = $('#js-more');
+    more.addEventListener('click', () => {
+      const hidden = Array.from(allRows).filter(tr => tr.style.display === 'none');
+      hidden.slice(0, revealSize).forEach(tr => tr.style.display = '');
+      if (hidden.length <= revealSize) more.disabled = true, more.textContent = '—';
+    });
+
+    // Newsletter (fake)
+    $('#js-news').addEventListener('submit', (e) => {
+      e.preventDefault();
+      alert('Thanks! You are on the list.');
+      e.target.reset();
+    });
+
+  } catch (err) {
+    console.error('boot error', err);
+    setSignal('red');
+  }
 })();
