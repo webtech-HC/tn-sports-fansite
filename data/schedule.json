@@ -1,26 +1,98 @@
 [
   {
-    "date": "2025-08-30T19:00:00-04:00",
-    "opponent": "Appalachian State",
-    "home": true,
-    "tv": "TBD",
-    "result": null,
-    "venue": "Knoxville, TN"
-  },
-  {
-    "date": "2025-09-06T20:00:00-04:00",
-    "opponent": "Chattanooga",
-    "home": true,
-    "tv": "TBD",
-    "result": null,
-    "venue": "Knoxville, TN"
-  },
-  {
-    "date": "2025-09-13T19:00:00-04:00",
-    "opponent": "at Oklahoma",
+    "date": null,
+    "opponent": "TBD",
     "home": false,
     "tv": "TBD",
     "result": null,
-    "venue": "Norman, OK"
+    "venue": "Mercedes-Benz Stadium"
+  },
+  {
+    "date": null,
+    "opponent": "TBD",
+    "home": false,
+    "tv": "TBD",
+    "result": null,
+    "venue": "Neyland Stadium"
+  },
+  {
+    "date": null,
+    "opponent": "TBD",
+    "home": false,
+    "tv": "TBD",
+    "result": null,
+    "venue": "Neyland Stadium"
+  },
+  {
+    "date": null,
+    "opponent": "TBD",
+    "home": false,
+    "tv": "TBD",
+    "result": null,
+    "venue": "Neyland Stadium"
+  },
+  {
+    "date": null,
+    "opponent": "TBD",
+    "home": false,
+    "tv": "TBD",
+    "result": null,
+    "venue": "Davis Wade Stadium"
+  },
+  {
+    "date": null,
+    "opponent": "TBD",
+    "home": false,
+    "tv": "TBD",
+    "result": null,
+    "venue": "Neyland Stadium"
+  },
+  {
+    "date": null,
+    "opponent": "TBD",
+    "home": false,
+    "tv": "TBD",
+    "result": null,
+    "venue": "Bryant-Denny Stadium"
+  },
+  {
+    "date": null,
+    "opponent": "TBD",
+    "home": false,
+    "tv": "TBD",
+    "result": null,
+    "venue": "Kroger Field"
+  },
+  {
+    "date": null,
+    "opponent": "TBD",
+    "home": false,
+    "tv": "TBD",
+    "result": null,
+    "venue": "Neyland Stadium"
+  },
+  {
+    "date": null,
+    "opponent": "TBD",
+    "home": false,
+    "tv": "TBD",
+    "result": null,
+    "venue": "Neyland Stadium"
+  },
+  {
+    "date": null,
+    "opponent": "TBD",
+    "home": false,
+    "tv": "TBD",
+    "result": null,
+    "venue": "Ben Hill Griffin Stadium"
+  },
+  {
+    "date": null,
+    "opponent": "TBD",
+    "home": false,
+    "tv": "TBD",
+    "result": null,
+    "venue": "Neyland Stadium"
   }
 ]

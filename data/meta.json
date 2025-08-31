@@ -1,1 +1,9 @@
-
+{
+  "lastUpdated": "2025-08-31T09:20:42.046Z",
+  "providers": {
+    "schedule": "CollegeFootballData",
+    "weather": "Open-Meteo",
+    "places": null
+  },
+  "year": 2025
+}
