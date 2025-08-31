@@ -5,12 +5,12 @@ on:
     branches: [ main ]
     paths:
       - 'data/*.json'
-      - 'data/schemas/**.json'
+      - 'data/schemas/**/*.json'
       - 'scripts/validate-data.js'
   pull_request:
     paths:
       - 'data/*.json'
-      - 'data/schemas/**.json'
+      - 'data/schemas/**/*.json'
       - 'scripts/validate-data.js'
 
 permissions:
@@ -21,12 +21,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
 
       - name: Install validator deps
-        run: npm i --no-save ajv@8 ajv-formats@2
+        run: npm i --no-save ajv@^8 ajv-formats@^3
 
       - name: Run validator
-        run: node scripts/validate-data.js
+        run: node --trace-warnings scripts/validate-data.js
