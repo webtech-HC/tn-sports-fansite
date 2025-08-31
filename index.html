@@ -1,213 +1,234 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>TENNESSEE — Gameday Hub</title>
 
   <!-- CSS -->
-  <link rel="stylesheet" href="./assets/css/styles.css"/>
+  <link rel="stylesheet" href="assets/css/styles.css" />
 
-  <!-- Leaflet (map) -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">
-  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
-
-  <!-- Small helper for <time> → locale strings in app.js -->
-  <script>window.__TZ__="America/New_York";</script>
+  <!-- Leaflet (Map) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 </head>
 <body>
+
+  <!-- Header -->
   <header class="site-header">
-    <div class="brand">
-      <strong>TENNESSEE</strong>
-      <nav class="top-nav">
+    <div class="wrap nav">
+      <div class="brand">TENNESSEE</div>
+      <nav class="links">
         <a href="#schedule">Schedule</a>
         <a href="#specials">Specials</a>
         <a href="#map">Map</a>
         <a href="#guide">Guide</a>
-        <a class="btn btn-small" href="https://forms.gle/" target="_blank" rel="noopener">Submit</a>
+        <a class="pill" href="https://forms.gle/" target="_blank" rel="noopener">Submit</a>
       </nav>
-    </div>
-
-    <p class="strap">Fan-run. Unofficial. Built by fans for fans.</p>
-    <div class="cta-row">
-      <a class="btn" href="#schedule">View Schedule</a>
-      <a class="btn" href="#specials">Find Specials</a>
-      <a class="btn" href="https://forms.gle/" target="_blank" rel="noopener">Submit a Listing</a>
-      <button class="btn" id="addToCalendarTop">Add to Calendar</button>
-      <span class="meta" id="kickoffClock">Kickoff in —:—:—</span>
-      <span class="meta sep">•</span>
-      <span class="meta">Data updated — <em id="updatedMeta">—</em></span>
     </div>
   </header>
 
-  <main class="wrap grid-main">
-    <!-- MAIN COLUMN -->
-    <div class="main-col">
+  <!-- Action bar (optional quick actions) -->
+  <div class="wrap bar">
+    <button class="btn" data-jump="#schedule">View Schedule</button>
+    <button class="btn" data-jump="#specials">Find Specials</button>
+    <a class="btn" href="https://forms.gle/" target="_blank" rel="noopener">Submit a Listing</a>
+    <button class="btn" id="btnIcs">Add to Calendar</button>
+    <div class="meta">Kickoff in <span id="countdown">—</span> • Data updated — —</div>
+  </div>
 
-      <!-- Top row: 4 cards -->
-      <section class="grid top4">
-        <!-- Live score + signal -->
-        <article class="card" id="card-score">
-          <header class="card__head">
-            <h2>Live Score Box</h2>
-            <span class="signal" id="gameSignal" aria-label="Game status"></span>
-          </header>
-          <div class="card__body">
-            <p id="scoreTeam">Tennessee</p>
-            <p id="scoreStatus" class="muted">No game in progress.</p>
-          </div>
-        </article>
+  <!-- The Strip (four cards) -->
+  <section class="wrap strip">
+    <!-- Live Score Box -->
+    <article class="card" id="scoreCard" aria-live="polite">
+      <header>
+        <h3>Live Score Box</h3>
+        <span class="dot" id="scoreDot" data-state="red" title="Game status"></span>
+      </header>
+      <div class="card-body" id="scoreBody">
+        <div class="team">Tennessee</div>
+        <p>No game in progress.</p>
+      </div>
+    </article>
 
-        <!-- Upcoming / current game -->
-        <article class="card" id="card-next">
-          <header class="card__head"><h2>Upcoming / Current Game</h2></header>
-          <div class="card__body">
-            <p><strong id="nextMatch">Loading…</strong></p>
-            <p id="nextWhen"></p>
-            <p id="nextVenue" class="muted"></p>
-            <button class="btn" id="addToCalendar">Add to Calendar</button>
-          </div>
-        </article>
+    <!-- Upcoming / Current Game -->
+    <article class="card" id="upcomingCard">
+      <header><h3>Upcoming / Current Game</h3></header>
+      <div class="card-body">
+        <p id="nextLine">Loading…</p>
+        <button class="btn" id="btnIcs2">Add to Calendar</button>
+        <p class="meta" id="venueLine"></p>
+      </div>
+    </article>
 
-        <!-- Team Rank -->
-        <article class="card" id="card-rank">
-          <header class="card__head"><h2>Team Rank</h2></header>
-          <div class="card__body" id="teamRank">Rank data coming soon.</div>
-        </article>
+    <!-- Team Rank -->
+    <article class="card" id="rankCard">
+      <header><h3>Team Rank</h3></header>
+      <div class="card-body" id="rankBody">
+        <p>Rank data coming soon.</p>
+      </div>
+    </article>
 
-        <!-- Game Odds -->
-        <article class="card" id="card-odds">
-          <header class="card__head"><h2>Game Odds</h2></header>
-          <div class="card__body" id="gameOdds">Odds data coming soon.</div>
-          <footer class="card__foot"><small class="muted">Disclaimer: for entertainment only.</small></footer>
-        </article>
-      </section>
+    <!-- Game Odds -->
+    <article class="card" id="oddsCard">
+      <header><h3>Game Odds</h3></header>
+      <div class="card-body" id="oddsBody">
+        <p>Odds data coming soon.</p>
+        <small class="muted">For entertainment only. Check a licensed sportsbook for current numbers.</small>
+      </div>
+    </article>
+  </section>
 
-      <!-- Schedule & results -->
+  <!-- Main + Right Rail -->
+  <main class="wrap layout">
+    <!-- LEFT / MAIN -->
+    <div class="main">
+
+      <!-- Schedule & Results -->
       <section class="card" id="schedule">
-        <header class="card__head">
-          <h2>Schedule &amp; Results</h2>
-          <span class="dim">Data updated — <em id="updatedMetaInline">—</em></span>
+        <header>
+          <h3>Schedule &amp; Results</h3>
+          <span class="meta">Data updated — —</span>
         </header>
-        <div class="table-wrap">
-          <table class="table">
-            <thead>
-              <tr><th>Date</th><th>Opponent</th><th>H/A</th><th>TV</th><th>Result</th></tr>
-            </thead>
-            <tbody id="schedTbody"></tbody>
-          </table>
-        </div>
-        <div class="card__foot">
-          <small class="muted">Times/TV subject to change. Check official sources day-of.</small>
-          <button class="btn btn-small" id="showMore">Show 3 more</button>
+
+        <div class="card-body">
+          <div class="scroll-x">
+            <table class="list" id="schedGrid" aria-describedby="schedNote">
+              <thead>
+                <tr>
+                  <th scope="col">Date</th>
+                  <th scope="col">Opponent</th>
+                  <th scope="col">H/A</th>
+                  <th scope="col">TV</th>
+                  <th scope="col">Result</th>
+                </tr>
+              </thead>
+              <tbody id="schedRows"></tbody>
+            </table>
+          </div>
+
+          <p id="schedNote" class="muted">Times/TV subject to change. Check official sources day-of.</p>
+          <button class="btn" id="showMoreBtn">Show 3 more</button>
         </div>
       </section>
 
-      <!-- Split row: guide + places -->
-      <section class="grid split2" id="lower-split">
-        <!-- Guide -->
-        <article class="card" id="guide">
-          <header class="card__head"><h2>Gameday Guide (Unofficial)</h2></header>
-          <div class="guide__grid">
-            <section>
-              <h3>Getting There</h3>
+      <!-- Split: Gameday Guide + Places to Stay -->
+      <div class="split">
+        <section class="card" id="guide">
+          <header><h3>Gameday Guide (Unofficial)</h3></header>
+          <div class="card-body guide">
+            <div>
+              <h4>Getting There</h4>
               <ul>
                 <li>Rideshare or public lots; expect road closures near campus.</li>
                 <li>Plan 60–90 minutes for traffic and entry queues.</li>
                 <li>Pick a meetup spot in case phones die.</li>
               </ul>
-            </section>
-            <section>
-              <h3>Food &amp; Water</h3>
+            </div>
+            <div>
+              <h4>Food &amp; Water</h4>
               <ul>
                 <li>Many venues are cashless—bring a card or mobile pay.</li>
                 <li>Hydrate early; find refill spots on concourses.</li>
                 <li>Family sections are great with kids; consider ear protection.</li>
               </ul>
-            </section>
-            <section>
-              <h3>Entry &amp; Bags</h3>
+            </div>
+            <div>
+              <h4>Entry &amp; Bags</h4>
               <ul>
-                <li>Many venues have clear bag rules and metal detectors.</li>
+                <li>Many venues have clear-bag rules and metal detectors.</li>
                 <li>Leave large items, outside alcohol, and prohibited items at home.</li>
                 <li>Always verify with the official event page before you go.</li>
               </ul>
-            </section>
-            <section>
-              <h3>Accessibility</h3>
+            </div>
+            <div>
+              <h4>Accessibility</h4>
               <ul>
                 <li>Check ADA parking, shuttle drop-offs, elevators, and seating.</li>
                 <li>Service animals typically permitted—follow venue guidance.</li>
                 <li>Contact accessibility office ahead for assistance.</li>
               </ul>
-            </section>
+            </div>
           </div>
-        </article>
+        </section>
 
-        <!-- Places to stay -->
-        <article class="card" id="places">
-          <header class="card__head"><h2>Places to Stay</h2></header>
-          <div id="placesGrid" class="list-grid"></div>
-          <footer class="card__foot"><small class="muted">Pins show a sample of nearby food/drink/lunch spots. Data © Foursquare; Map © OpenStreetMap contributors.</small></footer>
-        </article>
-      </section>
+        <section class="card" id="places">
+          <header><h3>Places to Stay</h3></header>
+          <div class="card-body">
+            <p>Pins show a sample of nearby food/drink/lunch spots. Data © Foursquare; Map © OpenStreetMap contributors.</p>
+            <ul class="bullets" id="placesList"></ul>
+          </div>
+        </section>
+      </div>
 
-      <!-- Featured specials -->
+      <!-- Featured Specials -->
       <section class="card" id="specials">
-        <header class="card__head"><h2>Featured Specials</h2></header>
-        <div id="specialsGrid" class="specials-grid"></div>
-        <footer class="card__foot"><small class="muted">Listings are community-submitted. Call ahead to confirm.</small></footer>
+        <header><h3>Featured Specials</h3></header>
+        <div class="card-body">
+          <div class="specials-grid" id="specialsGrid"></div>
+          <p class="muted">Listings are community-submitted. Call ahead to confirm.</p>
+        </div>
       </section>
+
     </div>
 
-    <!-- RIGHT RAIL (sticky) -->
-    <aside class="rail sticky-rail" aria-label="Right rail">
-      <article class="card" id="card-map">
-        <header class="card__head"><h2>Map</h2></header>
-        <div id="map" class="map"></div>
-      </article>
+    <!-- RIGHT / STICKY RAIL -->
+    <aside class="rail" aria-label="Live utilities">
+      <!-- Map -->
+      <section class="card" id="mapCard">
+        <header><h3>Map</h3></header>
+        <div class="card-body">
+          <div id="map" class="map"></div>
+        </div>
+      </section>
 
-      <article class="card" id="card-wx">
-        <header class="card__head"><h2>Live Local Weather</h2></header>
-        <ul class="wx" id="wxList">
-          <li class="muted">—</li>
-        </ul>
-        <footer class="card__foot"><small class="muted">Forecasts change—check again closer to kickoff.</small></footer>
-      </article>
+      <!-- Live Local Weather -->
+      <section class="card" id="wxCard">
+        <header><h3>Live Local Weather</h3></header>
+        <div class="card-body">
+          <ul class="wx" id="wxList"></ul>
+          <p class="muted">Forecasts change—check again closer to kickoff.</p>
+        </div>
+      </section>
 
-      <article class="card">
-        <header class="card__head"><h2>Submit a Listing</h2></header>
-        <p>Restaurant, bar, shop, or event with a gameday special? Share it with fans.</p>
-        <a class="btn" href="https://forms.gle/" target="_blank" rel="noopener">Open form</a>
-      </article>
+      <!-- Submit a Listing -->
+      <section class="card" id="submitCard">
+        <header><h3>Submit a Listing</h3></header>
+        <div class="card-body">
+          <p>Restaurant, bar, shop, or event with a gameday special? Share it with fans.</p>
+          <a class="btn" href="https://forms.gle/" target="_blank" rel="noopener">Open form</a>
+        </div>
+      </section>
 
-      <article class="card">
-        <header class="card__head"><h2>Newsletter</h2></header>
-        <p>Get a quick gameday morning email: kickoff time, weather, and new specials.</p>
-        <form class="inline-form" onsubmit="return false;">
-          <input id="emailBox" type="email" placeholder="you@email.com" aria-label="Email address"/>
-          <button class="btn btn-small">Subscribe</button>
-        </form>
-        <footer class="card__foot"><small class="muted">We don’t sell your data. Unsubscribe anytime.</small></footer>
-      </article>
+      <!-- Newsletter -->
+      <section class="card" id="newsCard">
+        <header><h3>Newsletter</h3></header>
+        <div class="card-body">
+          <p>Get a quick gameday morning email: kickoff time, weather, and new specials.</p>
+          <form class="inline" onsubmit="return false;">
+            <input type="email" placeholder="you@email.com" aria-label="Email" />
+            <button class="btn" type="submit">Subscribe</button>
+          </form>
+          <p class="muted">We don’t sell your data. Unsubscribe anytime.</p>
+        </div>
+      </section>
     </aside>
   </main>
 
+  <!-- Footer -->
   <footer class="site-footer">
-    <p class="legal">
-      Independent, fan-operated site. Not affiliated with, or endorsed by, any university, athletics program,
-      conference, or governing body.
-      Weather by Open-Meteo • Schedule data via CollegeFootballData • Map data © OSM contributors • Places data © Foursquare.
-    </p>
-    <ul class="policies">
-      <li><a href="/terms.html">Terms &amp; Policies</a></li>
-      <li><a href="mailto:hello@example.com">Contact</a></li>
-      <li><a href="https://github.com/webtech-HC/tn-sports-fansite">Source</a></li>
-    </ul>
+    <div class="wrap">
+      <p class="tiny">
+        Independent, fan-operated site. Not affiliated with, or endorsed by, any university, athletics program, conference, or governing body.
+        Weather by Open-Meteo • Schedule data via CollegeFootballData • Map data © OSM contributors • Places data © Foursquare.
+      </p>
+      <nav class="tiny links">
+        <a href="#guide">Guide</a> • <a href="#specials">Specials</a> • <a href="#map">Map</a> • <a href="#schedule">Schedule</a> • <a href="terms.html">Terms &amp; Policies</a> • <a href="mailto:hello@example.com">Contact</a>
+      </nav>
+    </div>
   </footer>
 
-  <script type="module" src="./assets/js/app.js"></script>
+  <!-- App -->
+  <script type="module" src="assets/js/app.js"></script>
 </body>
 </html>
