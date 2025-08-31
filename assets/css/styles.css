@@ -8,7 +8,7 @@
   --color-field-1:       #121D0B; /* canvas */
   --color-field-2:       #0C1A09; /* cards / wells */
 
---bg-image: url("assets/img/bg.jpg"); /* update if you use a different path/name */
+--bg-image: url("assets/imgs/tn-metallic-1.jpg"); /* update if you use a different path/name */ 
   
   /* Text */
   --color-ink:           #F3F6F8;
