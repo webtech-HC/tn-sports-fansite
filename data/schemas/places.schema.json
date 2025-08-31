@@ -1,7 +1,15 @@
 {
-"$schema": "https://json-schema.org/draft/2020-12/schema",
-"$id": "places.schema.json",
-"title": "Places (array)",
-"type": "array",
-"items": { "$ref": "./place.schema.json" }
+  "$id": "places.schema.json",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["name", "formatted_address", "lat", "lng"],
+    "properties": {
+      "name": { "type": "string", "minLength": 1 },
+      "formatted_address": { "type": "string" },
+      "lat": { "type": "number" },
+      "lng": { "type": "number" }
+    },
+    "additionalProperties": true
+  }
 }
