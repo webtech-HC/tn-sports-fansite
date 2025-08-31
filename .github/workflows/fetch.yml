@@ -3,7 +3,7 @@ name: Refresh data
 on:
   schedule:
     - cron: "*/30 * * * *"   # every 30 minutes (UTC)
-  workflow_dispatch: {}      # allow manual runs
+  workflow_dispatch: {}       # allow manual runs
 
 permissions:
   contents: write
@@ -21,9 +21,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
 
       - name: Fetch & build data JSON
-        run: node scripts/fetch-data.js
+        run: node --trace-warnings scripts/fetch-data.js
         env:
           CFBD_API_KEY: ${{ secrets.CFBD_API_KEY }}
           FSQ_API_KEY:  ${{ secrets.FSQ_API_KEY }}
@@ -33,7 +34,6 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git pull --rebase || true
-          mkdir -p data
           git add data/*.json || true
           if git diff --cached --quiet; then
             echo "No changes"
