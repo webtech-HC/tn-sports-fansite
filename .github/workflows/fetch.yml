@@ -2,22 +2,27 @@ name: Refresh data
 
 on:
   schedule:
-    - cron: "*/30 * * * *"   # every 30 minutes (UTC)
-  workflow_dispatch: {}      # allow manual runs
+    # baseline: every 30 min (UTC)
+    - cron: "*/30 * * * *"
+    # gameday boost: Saturdays every 5 min (UTC)
+    - cron: "*/5 * * * 6"
+    # Thu/Fri slates: every 10 min (UTC)
+    - cron: "*/10 * * * 4,5"
+  workflow_dispatch:
+  repository_dispatch: {} # optional external hooks
 
 permissions:
   contents: write
 
 concurrency:
   group: data-refresh
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   fetch:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -26,20 +31,14 @@ jobs:
         env:
           CFBD_API_KEY: ${{ secrets.CFBD_API_KEY }}
           FSQ_API_KEY:  ${{ secrets.FSQ_API_KEY }}
-        run: |
-          node scripts/fetch-data.js
-          echo "-----"
-          ls -lh data/*.json
+        run: node scripts/fetch-data.js
 
-      - name: Commit updated JSON
+      - name: Commit updated JSON (if changed)
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          # Keep the branch current (avoids non-fast-forward errors)
-          git fetch origin
           git pull --rebase || true
-          # Stage generated JSON
-          git add data/*.json
+          git add data/*.json || true
           if git diff --cached --quiet; then
             echo "No changes"
           else
