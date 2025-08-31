@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "name": "Old City Grill",
+    "area": "Old City",
+    "address": "123 W Jackson Ave, Knoxville",
+    "lat": 35.9705,
+    "lon": -83.9192,
+    "url": "https://example.com"
+  }
+]
