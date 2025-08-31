@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TN Football Time — For the Fans, By the Fans</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/main.css" />
+  <!-- Leaflet (map) -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="site-head">
+    <h1>TN Football Time</h1>
+    <p class="sub">For the Fans, By the Fans</p>
+
+    <div class="toggles">
+      <button id="a11yToggle" class="pill" aria-pressed="false">Accessibility</button>
+      <div class="source-toggle" role="group" aria-label="Data source">
+        <label><input type="radio" name="source" value="cfbd" checked> CFBD</label>
+        <label><input type="radio" name="source" value="espn"> ESPN</label>
+      </div>
+    </div>
+  </header>
+
+  <main id="main" class="grid">
+    <!-- Next/Current Game + Live Score -->
+    <section class="card" aria-labelledby="score-title">
+      <header class="card-head">
+        <h2 id="score-title">Live Score</h2>
+        <div class="meta">
+          <time id="lastRefresh" datetime="">Updated —</time>
+          <button id="refreshBtn" class="btn">Manual refresh</button>
+        </div>
+      </header>
+      <div id="scoreBox" class="score" aria-live="polite">
+        <div class="row">
+          <span class="team home" id="homeTeam">Home</span>
+          <span class="pts" id="homePts">–</span>
+        </div>
+        <div class="row">
+          <span class="team away" id="awayTeam">Away</span>
+          <span class="pts" id="awayPts">–</span>
+        </div>
+        <div class="row small">
+          <span id="gameStatus">—</span>
+          <span id="quarterBreakdown" class="mono"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Rankings / Standings (simple team-focused) -->
+    <section class="card" aria-labelledby="rank-title">
+      <header class="card-head">
+        <h2 id="rank-title">Rankings</h2>
+      </header>
+      <div id="rankings" class="rankings" aria-live="polite">Loading…</div>
+    </section>
+
+    <!-- Weather -->
+    <section class="card" aria-labelledby="wx-title">
+      <header class="card-head">
+        <h2 id="wx-title">Knoxville Weather (Gameday)</h2>
+      </header>
+      <div id="weather" class="weather" aria-live="polite">Loading…</div>
+    </section>
+
+    <!-- Map (UT campus wide view) -->
+    <section class="card map-card" aria-labelledby="map-title">
+      <header class="card-head">
+        <h2 id="map-title">UTK Area Map</h2>
+      </header>
+      <div id="map" class="map" role="application" aria-label="UT Knoxville map"></div>
+      <p class="tiny">Map © OpenStreetMap contributors • Tiles with attribution</p>
+    </section>
+
+    <!-- Listen Live -->
+    <section class="card" aria-labelledby="listen-title">
+      <header class="card-head"><h2 id="listen-title">Listen Live (Radio)</h2></header>
+      <ul class="list">
+        <li><a href="https://www.wivk.com/vols/" target="_blank" rel="noopener">WIVK 107.7 FM (Flagship)</a></li>
+        <li><a href="https://www.991thesportsanimal.com/listen-live/" target="_blank" rel="noopener">WNML 99.1 / AM 990</a></li>
+        <li><a href="https://thevarsitynetwork.com/" target="_blank" rel="noopener">Varsity Network (Web/App)</a></li>
+      </ul>
+      <p class="tiny">Links provided for convenience; streams may be geo/rights restricted. :contentReference[oaicite:4]{index=4}</p>
+    </section>
+  </main>
+
+  <footer class="site-foot">
+    <p><strong>Unofficial fan site.</strong> Not affiliated with or endorsed by the University of Tennessee. Team names and colors referenced for identification only. No logos or trademarks (e.g., Power T, checkerboard, Smokey) are used.</p>
+  </footer>
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin="">
+  </script>
+  <script>
+    // === Minimal config you can edit ===
+    window.APP_CONFIG = {
+      TEAM_NAME: "Tennessee",
+      // Center wider than Neyland to show the whole campus
+      MAP_CENTER: [35.9550, -83.9250], // Neyland approx; we zoom out a bit. :contentReference[oaicite:5]{index=5}
+      MAP_ZOOM: 14,
+      POLL_MS: 15000,
+      // Set this to your proxy endpoint if you don't want the key in the browser:
+      CFBD_PROXY_URL: "", // e.g., "https://your-worker.example.workers.dev/cfbd"
+      CFBD_API_KEY: ""    // only used if not using a proxy (client-side fetch)
+    };
+  </script>
+  <script src="assets/js/app.js" defer></script>
+</body>
+</html>
