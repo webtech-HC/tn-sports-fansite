@@ -1,17 +1,15 @@
 {
-"$schema": "https://json-schema.org/draft/2020-12/schema",
-"$id": "weather.schema.json",
-"title": "Weather (3-day)",
-"type": "array",
-"items": {
-"type": "object",
-"additionalProperties": false,
-"required": ["date", "hi", "lo"],
-"properties": {
-"date": { "type": "string", "format": "date" },
-"hi": { "type": "number" },
-"lo": { "type": "number" },
-"precip": { "type": ["number", "null"], "minimum": 0, "maximum": 100, "default": null }
-}
-}
+  "$id": "weather.schema.json",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["date", "hi", "lo", "precip"],
+    "properties": {
+      "date": { "type": "string", "format": "date" },
+      "hi": { "type": "number" },
+      "lo": { "type": "number" },
+      "precip": { "type": "number" }
+    },
+    "additionalProperties": false
+  }
 }
