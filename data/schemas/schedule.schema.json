@@ -1,7 +1,18 @@
 {
-"$schema": "https://json-schema.org/draft/2020-12/schema",
-"$id": "schedule.schema.json",
-"title": "Schedule",
-"type": "array",
-"items": { "$ref": "./game.schema.json" }
+  "$id": "schedule.schema.json",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["date", "opponent"],
+    "additionalProperties": true,
+    "properties": {
+      "date": { "type": "string", "format": "date-time" },
+      "opponent": { "type": "string", "minLength": 1 },
+      "home": { "type": ["boolean", "null"] },
+      "tv": { "type": ["string", "null"] },
+      "result": { "type": ["string", "null"] },
+      "venue": { "type": ["string", "null"] }
+    }
+  }
 }
+
