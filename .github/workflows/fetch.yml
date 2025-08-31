@@ -1,0 +1,41 @@
+name: Refresh data
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"   # every 30 minutes (UTC)
+  workflow_dispatch: {}       # allow manual runs
+
+permissions:
+  contents: write
+
+concurrency:
+  group: data-refresh
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Fetch & build data JSON
+        run: node scripts/fetch-data.js
+        env:
+          CFBD_API_KEY: ${{ secrets.CFBD_API_KEY }}
+          FSQ_API_KEY:  ${{ secrets.FSQ_API_KEY }}
+
+      - name: Commit updated JSON
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/*.json || true
+          if git diff --cached --quiet; then
+            echo "no changes"
+          else
+            git commit -m "chore(data): refresh"
+            git push
+          fi
