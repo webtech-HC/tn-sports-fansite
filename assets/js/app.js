@@ -1,221 +1,112 @@
-/* =======================
-   TN Football Time — App
-   ======================= */
-const C = window.APP_CONFIG;
-const $ = (sel) => document.querySelector(sel);
-const state = {
-  source: 'cfbd', // 'cfbd' | 'espn'
-  game: null,
-  pollHandle: null
+// ======= Simple JSON-driven page logic (GitHub Pages-safe) =======
+
+// Data paths (relative = works on GitHub Pages project sites)
+const PATH_SCHEDULE = 'data/schedule.json';
+const PATH_SPECIALS = 'data/specials.json';
+
+// Helpers
+const $ = s => document.querySelector(s);
+const pad = n => String(n).padStart(2,'0');
+const fmtDate = iso => new Date(iso).toLocaleDateString([], {month:'short', day:'numeric', weekday:'short'});
+const fmtTime = iso => new Date(iso).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+const untilParts = (iso) => {
+  const now = new Date(), then = new Date(iso);
+  const ms = Math.max(0, then - now);
+  const d = Math.floor(ms / 86400000);
+  const h = Math.floor((ms % 86400000) / 3600000);
+  const m = Math.floor((ms % 3600000) / 60000);
+  const s = Math.floor((ms % 60000) / 1000);
+  return {d,h,m,s};
 };
 
-function setLastRefresh() {
-  const now = new Date();
-  $('#lastRefresh').dateTime = now.toISOString();
-  $('#lastRefresh').textContent = `Updated ${now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'})}`;
-}
-
-// --- Accessibility toggle
-$('#a11yToggle')?.addEventListener('click', (e) => {
-  const on = document.documentElement.getAttribute('data-a11y') === 'on';
-  document.documentElement.setAttribute('data-a11y', on ? 'off' : 'on');
-  e.currentTarget.setAttribute('aria-pressed', String(!on));
-});
-
-// --- Source toggle
-document.querySelectorAll('input[name="source"]').forEach(r => {
-  r.addEventListener('change', (e) => {
-    state.source = e.target.value;
-    refreshAll();
-  });
-});
-
-// --- Manual refresh
-$('#refreshBtn')?.addEventListener('click', () => refreshAll());
-
-// ===================================
-// Data providers (CFBD + ESPN + WX)
-// ===================================
-
-// CFBD helper: fetch through proxy if configured
-async function cfbdFetch(path, params = {}) {
-  const url = new URL(`https://api.collegefootballdata.com${path}`);
-  for (const [k, v] of Object.entries(params)) if (v != null) url.searchParams.set(k, v);
-  const headers = {};
-  let endpoint = url.toString();
-
-  if (C.CFBD_PROXY_URL) {
-    endpoint = C.CFBD_PROXY_URL + path + '?' + url.searchParams.toString();
-  } else {
-    headers['Authorization'] = `Bearer ${C.CFBD_API_KEY || ''}`;
-  }
-
-  const res = await fetch(endpoint, { headers });
-  if (!res.ok) throw new Error(`CFBD ${res.status}`);
-  return res.json();
-}
-
-// ESPN scoreboard (no key). dates=YYYYMMDD (single or range)
-async function espnScoreboard(dateStr) {
-  const url = `https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=${dateStr}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`ESPN ${res.status}`);
-  return res.json();
-}
-
-// ---- GAME + SCORE LOGIC ----
-function formatYYYYMMDD(d = new Date()) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth()+1).padStart(2,'0');
-  const day = String(d.getDate()).padStart(2,'0');
-  return `${y}${m}${day}`;
-}
-
-async function getCurrentOrNextGame() {
-  const year = new Date().getFullYear();
-  if (state.source === 'espn') {
-    const sb = await espnScoreboard(formatYYYYMMDD(new Date()));
-    const events = sb.events || [];
-    const tn = events.find(e =>
-      (e?.name || '').toLowerCase().includes('tennessee') ||
-      (e?.competitions?.[0]?.competitors || []).some(c => (c?.team?.location||'').toLowerCase()==='tennessee')
-    );
-    if (!tn) return null;
-    return mapEspnEventToGame(tn);
-  } else {
-    // CFBD: grab all games this season for Tennessee, pick active or next
-    const games = await cfbdFetch('/games', { year, team: C.TEAM_NAME, seasonType: 'regular' });
-    const now = new Date();
-    const withDates = games.map(g => ({...g, start: new Date(g.start_date)})).sort((a,b)=>a.start-b.start);
-    // pick in-progress if points exist or status string shows "final" / TBD
-    const live = withDates.find(g => g.home_points != null || g.away_points != null);
-    const upcoming = withDates.find(g => g.start >= now) || withDates[withDates.length-1];
-    return (live || upcoming) ? mapCfbdToGame(live || upcoming) : null;
-  }
-}
-
-function mapCfbdToGame(g){
-  return {
-    id: g.id,
-    home: g.home_team, away: g.away_team,
-    homePts: g.home_points ?? '–',
-    awayPts: g.away_points ?? '–',
-    start: g.start_date,
-    statusText: g.venue ? `${g.venue}` : '',
-    quarters: (g.home_line_scores && g.away_line_scores) ? {
-      home: g.home_line_scores, away: g.away_line_scores
-    } : null
-  };
-}
-function mapEspnEventToGame(e){
-  const comp = e?.competitions?.[0];
-  const teams = comp?.competitors || [];
-  const home = teams.find(t => t.homeAway === 'home');
-  const away = teams.find(t => t.homeAway === 'away');
-  const status = comp?.status?.type || {};
-  return {
-    id: e.id,
-    home: home?.team?.shortDisplayName || home?.team?.name,
-    away: away?.team?.shortDisplayName || away?.team?.name,
-    homePts: home?.score ?? '–',
-    awayPts: away?.score ?? '–',
-    start: comp?.date,
-    statusText: status?.shortDetail || status?.description || '',
-    quarters: null
-  };
-}
-
-async function renderScore() {
-  const g = await getCurrentOrNextGame();
-  state.game = g;
-
-  $('#homeTeam').textContent = g ? g.home : '—';
-  $('#awayTeam').textContent = g ? g.away : '—';
-  $('#homePts').textContent = g?.homePts ?? '–';
-  $('#awayPts').textContent = g?.awayPts ?? '–';
-  $('#gameStatus').textContent = g?.statusText || '—';
-
-  if (g?.quarters) {
-    const q = g.quarters;
-    $('#quarterBreakdown').textContent =
-      `Q: ${q.home.map((v,i)=>`H${i+1}:${v??0}`).join(' ')} | ${q.away.map((v,i)=>`A${i+1}:${v??0}`).join(' ')}`;
-  } else {
-    $('#quarterBreakdown').textContent = '';
-  }
-  setLastRefresh();
-}
-
-// ---- Rankings (simple: AP Top 25 w/ Tennessee row, via CFBD) ----
-async function renderRankings(){
+async function fetchJSON(path, fallback = null){
   try{
-    const year = new Date().getFullYear();
-    // If you prefer Coaches/CFP, change "AP Top 25"
-    const data = await cfbdFetch('/rankings', { year, seasonType:'regular', week: '' });
-    // Find latest poll snapshot
-    const latest = data?.[data.length-1];
-    const ap = latest?.polls?.find(p => p.poll === 'AP Top 25');
-    if (!ap) { $('#rankings').textContent = '—'; return; }
-    const tn = ap.ranks.find(r => r.school === 'Tennessee');
-    $('#rankings').innerHTML = tn
-      ? `<div><strong>AP:</strong> #${tn.rank} — ${tn.school}</div>`
-      : `<div><strong>AP:</strong> Tennessee not ranked</div>`;
-    setLastRefresh();
+    const res = await fetch(path, {cache:'no-store'});
+    if(!res.ok) throw new Error(res.statusText);
+    return await res.json();
   }catch(e){
-    $('#rankings').textContent = 'Rankings unavailable';
+    console.warn('Failed to fetch', path, e);
+    return fallback;
   }
 }
 
-// ---- Weather: NWS primary, Open-Meteo fallback ----
-async function renderWeather(){
-  try{
-    const [lat, lon] = C.MAP_CENTER;
-    // NWS points → forecastHourly
-    const meta = await fetch(`https://api.weather.gov/points/${lat},${lon}`).then(r=>r.json()); // :contentReference[oaicite:6]{index=6}
-    const hourlyUrl = meta?.properties?.forecastHourly;
-    const hourly = await fetch(hourlyUrl).then(r=>r.json());
-    const p0 = hourly?.properties?.periods?.[0];
-    $('#weather').innerHTML = p0
-      ? `<div><strong>${p0.shortForecast}</strong> · ${Math.round(p0.temperature)}°${p0.temperatureUnit} · Wind ${p0.windSpeed}</div>`
-      : '—';
-  }catch(err){
-    // Open-Meteo fallback (no key) :contentReference[oaicite:7]{index=7}
-    const [lat, lon] = C.MAP_CENTER;
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,apparent_temperature,precipitation_probability,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`;
-    const data = await fetch(url).then(r=>r.json());
-    const t = data?.hourly?.temperature_2m?.[0];
-    const w = data?.hourly?.wind_speed_10m?.[0];
-    $('#weather').innerHTML = (t!=null)
-      ? `<div><strong>Temp</strong> ${Math.round(t)}°F · Wind ${Math.round(w||0)} mph (Open-Meteo)</div>`
-      : 'Weather unavailable';
-  }
-  setLastRefresh();
+// Find the next upcoming game (>= now). If none, return the last game.
+function pickNextGame(schedule){
+  const now = Date.now();
+  const sorted = [...schedule].sort((a,b)=> new Date(a.date) - new Date(b.date));
+  const future = sorted.find(g => new Date(g.date).getTime() >= now);
+  return future || sorted[sorted.length - 1] || null;
 }
 
-// ---- Map ----
-function initMap(){
-  const map = L.map('map').setView(C.MAP_CENTER, C.MAP_ZOOM);
-  // OSM tiles + attribution (required). :contentReference[oaicite:8]{index=8}
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; OpenStreetMap contributors'
-  }).addTo(map);
-  // Marker near Neyland
-  L.marker(C.MAP_CENTER).addTo(map).bindPopup('Neyland Stadium area');
+function paintQuick(game){
+  if(!game) return;
+  $("#qOpp").textContent  = game.opponent;
+  $("#qDate").textContent = new Date(game.date).toLocaleDateString([], {weekday:'long', month:'long', day:'numeric'});
+  $("#qTime").textContent = fmtTime(game.date);
+  $("#qVenue").textContent= game.venue || (game.home ? "Knoxville, TN" : "");
 }
 
-// ---- Orchestration ----
-async function refreshAll(){
-  $('#refreshBtn').disabled = true;
-  try{
-    await Promise.all([renderScore(), renderRankings(), renderWeather()]);
-  } finally {
-    $('#refreshBtn').disabled = false;
-  }
+function tickCountdown(kickoffISO){
+  if(!kickoffISO) return;
+  const {d,h,m,s} = untilParts(kickoffISO);
+  $("#miniDays").textContent  = pad(d);
+  $("#miniHours").textContent = pad(h);
+  $("#miniMins").textContent  = pad(m);
+  $("#cdD").textContent = pad(d);
+  $("#cdH").textContent = pad(h);
+  $("#cdM").textContent = pad(m);
+  $("#cdS").textContent = pad(s);
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-  initMap();
-  refreshAll();
-  if (state.pollHandle) clearInterval(state.pollHandle);
-  state.pollHandle = setInterval(refreshAll, C.POLL_MS);
-});
+function paintSchedule(schedule){
+  const tbody = $("#schBody");
+  if(!tbody) return;
+  const rows = schedule.map(g => `
+    <tr>
+      <td>${fmtDate(g.date)} ${fmtTime(g.date)}</td>
+      <td>${g.opponent}</td>
+      <td>${g.home ? "Home" : "Away"}</td>
+      <td>${g.tv || "TBD"}</td>
+      <td>${g.result ?? ""}</td>
+    </tr>
+  `).join("");
+  tbody.innerHTML = rows;
+}
+
+function paintSpecials(list){
+  const grid = $("#specialsGrid");
+  if(!grid) return;
+  grid.innerHTML = list.slice(0,6).map(x=> `
+    <article class="sp">
+      <h3>${x.title}</h3>
+      <div class="meta">${x.biz} • ${x.area} • ${x.time}</div>
+      <p><a href="${x.link}" target="_blank" rel="noopener">Details</a></p>
+    </article>
+  `).join("");
+}
+
+(async function init(){
+  // Fallbacks (kept tiny)
+  const FALLBACK_SCHEDULE = [
+    {date:"2025-08-30T19:00:00-04:00", opponent:"Appalachian State", home:true, tv:"TBD", result:null, venue:"Knoxville, TN"},
+    {date:"2025-09-06T20:00:00-04:00", opponent:"Chattanooga", home:true, tv:"TBD", result:null, venue:"Knoxville, TN"},
+    {date:"2025-09-13T19:00:00-04:00", opponent:"at Oklahoma", home:false, tv:"TBD", result:null, venue:"Norman, OK"}
+  ];
+  const FALLBACK_SPECIALS = [
+    {title:"Wings + Pitchers", biz:"Checkerboard Tavern", area:"The Strip", time:"4–7pm", link:"#"},
+    {title:"Post-Game Pancakes", biz:"Old City Bakehouse", area:"Old City", time:"9:30pm–1am", link:"#"},
+    {title:"Family Brunch", biz:"Market Square Café", area:"Downtown", time:"Sat–Sun", link:"#"},
+    {title:"Pizza & Pitchers", biz:"Riverfront Pizza", area:"Downtown", time:"All day", link:"#"}
+  ];
+
+  const schedule = await fetchJSON(PATH_SCHEDULE, FALLBACK_SCHEDULE);
+  const specials = await fetchJSON(PATH_SPECIALS, FALLBACK_SPECIALS);
+
+  paintSchedule(schedule);
+  paintSpecials(specials);
+
+  const next = pickNextGame(schedule);
+  paintQuick(next);
+  tickCountdown(next?.date);
+  setInterval(()=>tickCountdown(next?.date), 1000);
+})();
