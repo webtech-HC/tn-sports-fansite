@@ -1,260 +1,204 @@
-// assets/js/app.js
-// ======= JSON-driven page logic (GitHub Pages-safe) =======
+(() => {
+  const PATH_SCHEDULE = 'data/schedule.json';
+  const PATH_NEXT     = 'data/next.json';
+  const PATH_WEATHER  = 'data/weather.json';
+  const PATH_PLACES   = 'data/places.json';
+  const PATH_SPECIALS = 'data/specials.json';
+  const PATH_META     = 'data/meta.json';
 
-const PATH_SCHEDULE = 'data/schedule.json';
-const PATH_SPECIALS = 'data/specials.json'; // your hand-curated deals
-const PATH_WEATHER  = 'data/weather.json';  // produced by the Action
-const PATH_META     = 'data/meta.json';     // produced by the Action
-const PATH_PLACES   = 'data/places.json';   // produced by the Action (optional)
+  const TZ = 'America/New_York';
 
-// Helpers
-const $ = s => document.querySelector(s);
-const pad = n => String(n).padStart(2, '0');
-const fmtDate = iso => new Date(iso).toLocaleDateString([], { month: 'short', day: 'numeric', weekday: 'short' });
-const fmtTime = iso => new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-const untilParts = (iso) => {
-  if (!iso) return { d:0,h:0,m:0,s:0 };
-  const now = new Date(), then = new Date(iso);
-  const ms = Math.max(0, then - now);
-  const d = Math.floor(ms / 86400000);
-  const h = Math.floor((ms % 86400000) / 3600000);
-  const m = Math.floor((ms % 3600000) / 60000);
-  const s = Math.floor((ms % 60000) / 1000);
-  return { d, h, m, s };
-};
+  const $ = (sel, el = document) => el.querySelector(sel);
+  const $$ = (sel, el = document) => Array.from(el.querySelectorAll(sel));
+  const fmt = (d, opt) => new Date(d).toLocaleString('en-US', { timeZone: TZ, ...opt });
 
-async function fetchJSON(path, fallback = null) {
-  try {
-    const res = await fetch(path, { cache: 'no-store' });
-    if (!res.ok) throw new Error(res.statusText);
-    return await res.json();
-  } catch (e) {
-    console.warn('Failed to fetch', path, e);
-    return fallback;
+  async function getJSON(path) {
+    const r = await fetch(path, { cache: 'no-store' }).catch(() => null);
+    if (!r || !r.ok) return null;
+    try { return await r.json(); } catch { return null; }
   }
-}
 
-// Pick next upcoming game (>= now). If none, last game.
-function pickNextGame(schedule) {
-  if (!Array.isArray(schedule) || !schedule.length) return null;
-  const now = Date.now();
-  const sorted = [...schedule].sort((a, b) => new Date(a.date) - new Date(b.date));
-  return sorted.find(g => new Date(g.date).getTime() >= now) || sorted[sorted.length - 1] || null;
-}
+  /* ---------- Upcoming + Countdown ---------- */
+  async function paintUpcoming() {
+    const data = await getJSON(PATH_NEXT);
+    const elOpp = $('#opp');
+    const elDT  = $('#dateTime');
+    const elV   = $('#venue');
+    const btn1  = $('#addToCalendar');
+    const btn2  = $('#addToCalendar2');
+    if (!data || !data.date) {
+      if (elDT) elDT.textContent = 'TBD';
+      return null;
+    }
 
-// ---------- Paint quick glance ----------
-function paintQuick(game) {
-  if (!game) return;
-  $("#qOpp").textContent = game.opponent;
-  $("#qDate").textContent = new Date(game.date).toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
-  $("#qTime").textContent = fmtTime(game.date);
-  $("#qVenue").textContent = game.venue || (game.home ? "Knoxville, TN" : "Away");
-}
+    const kickoffISO = data.date; // ISO canonical (UTC)
+    const whenTxt = fmt(kickoffISO, { dateStyle: 'medium', timeStyle: 'short' }) + ' ET';
+    if (elOpp) elOpp.textContent = data.opponent || 'Opponent';
+    if (elDT)  elDT.textContent  = whenTxt;
+    if (elV)   elV.textContent   = data.venue || 'Knoxville, TN';
 
-// ---------- Countdown (hero mini + guide block) ----------
-function tickCountdown(kickoffISO) {
-  if (!kickoffISO) return;
-  const { d, h, m, s } = untilParts(kickoffISO);
-  $("#miniDays")  && ($("#miniDays").textContent = pad(d));
-  $("#miniHours") && ($("#miniHours").textContent = pad(h));
-  $("#miniMins")  && ($("#miniMins").textContent = pad(m));
-  $("#cdD") && ($("#cdD").textContent = pad(d));
-  $("#cdH") && ($("#cdH").textContent = pad(h));
-  $("#cdM") && ($("#cdM").textContent = pad(m));
-  $("#cdS") && ($("#cdS").textContent = pad(s));
-}
+    const ics = makeICS({
+      title: `Tennessee vs ${data.opponent || 'Opponent'}`,
+      startISO: kickoffISO,
+      durationMin: 210,
+      location: data.venue || 'Knoxville, TN',
+      description: 'Unofficial reminder from Gameday Hub',
+    });
+    const click = () => downloadICS(ics, 'tennessee-gameday.ics');
+    btn1 && (btn1.onclick = click);
+    btn2 && (btn2.onclick = click);
 
-// ---------- Render schedule ----------
-function paintSchedule(schedule) {
-  const tbody = $("#schBody");
-  if (!tbody) return;
-  tbody.innerHTML = (schedule || []).map(g => `
-    <tr>
-      <td>${fmtDate(g.date)} ${fmtTime(g.date)}</td>
-      <td>${g.opponent}</td>
-      <td>${g.home ? "Home" : "Away"}</td>
-      <td>${g.tv || "TBD"}</td>
-      <td>${g.result ?? ""}</td>
-    </tr>
-  }).join("");
-}
+    startCountdown(kickoffISO);
+    return kickoffISO;
+  }
 
-// ---------- Render specials (supports two shapes) ----------
-function normalizeSpecial(x){
-  return {
-    title: x.deal_title || x.title || 'Special',
-    biz:   x.business_name || x.biz || '',
-    area:  x.area || '',
-    time:  x.time_window || x.time || '',
-    link:  x.url || x.link || '#'
-  };
-}
-function paintSpecials(list) {
-  const grid = $("#specialsGrid");
-  if (!grid) return;
-  grid.innerHTML = (list || []).slice(0, 6).map(x => {
-    const s = normalizeSpecial(x);
-    const meta = [s.biz, s.area, s.time].filter(Boolean).join(' • ');
-    return `
-      <article class="sp">
+  function makeICS({ title, startISO, durationMin, location, description }) {
+    const dt = new Date(startISO);
+    const pad = n => `${n}`.padStart(2, '0');
+    const toUTC = d => `${d.getUTCFullYear()}${pad(d.getUTCMonth()+1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}00Z`;
+    const dtStart = toUTC(dt);
+    const dtEnd   = toUTC(new Date(dt.getTime() + (durationMin||180)*60000));
+    const esc = s => (s||'').replace(/([,;])/g, '\\$1');
+    return [
+      'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Gameday Hub//TN//EN',
+      'BEGIN:VEVENT',
+      `DTSTART:${dtStart}`,
+      `DTEND:${dtEnd}`,
+      `SUMMARY:${esc(title)}`,
+      `LOCATION:${esc(location)}`,
+      `DESCRIPTION:${esc(description)}`,
+      'END:VEVENT','END:VCALENDAR'
+    ].join('\r\n');
+  }
+
+  function downloadICS(content, filename) {
+    const blob = new Blob([content], { type: 'text/calendar' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  function startCountdown(kickoffISO) {
+    const el = $('#countdown');
+    if (!el) return;
+    const target = new Date(kickoffISO).getTime();
+    const tick = () => {
+      const now = Date.now();
+      let diff = Math.max(0, target - now);
+      const d = Math.floor(diff / 86400000); diff -= d*86400000;
+      const h = Math.floor(diff / 3600000);  diff -= h*3600000;
+      const m = Math.floor(diff / 60000);    diff -= m*60000;
+      const s = Math.floor(diff / 1000);
+      el.textContent = `Kickoff in ${d}d : ${String(h).padStart(2,'0')}h : ${String(m).padStart(2,'0')}m : ${String(s).padStart(2,'0')}s`;
+    };
+    tick();
+    setInterval(tick, 1000);
+  }
+
+  /* ---------- Schedule ---------- */
+  async function paintSchedule() {
+    const body = $('#scheduleBody');
+    if (!body) return;
+    const rows = await getJSON(PATH_SCHEDULE) || [];
+    body.innerHTML = rows.map(x => {
+      const ha = x.home === true ? 'H' : (x.home === false ? 'A' : '—');
+      const tv = x.tv || '—';
+      const res = x.result || '—';
+      const dateTxt = x.date ? fmt(x.date, { month: 'short', day: '2-digit' }) : 'TBD';
+      const opp = x.opponent || 'TBD';
+      return `<tr><td>${dateTxt}</td><td>${opp}</td><td>${ha}</td><td>${tv}</td><td>${res}</td></tr>`;
+    }).join('');
+  }
+
+  /* ---------- Weather ---------- */
+  async function paintWeather() {
+    const el = $('#wx');
+    if (!el) return;
+    const rows = await getJSON(PATH_WEATHER) || [];
+    el.innerHTML = rows.map(x => {
+      const day = x.date ? fmt(x.date, { weekday: 'short' }) : '—';
+      const hi  = Number.isFinite(x.hi) ? Math.round(x.hi) : '—';
+      const lo  = Number.isFinite(x.lo) ? Math.round(x.lo) : '—';
+      const pr  = Number.isFinite(x.precip) ? `${Math.round(x.precip)}%` : '—';
+      return `<li><b>${day}</b> <span>${hi}°</span> <span>${lo}°</span> <em>${pr}</em></li>`;
+    }).join('');
+  }
+
+  /* ---------- Specials ---------- */
+  function normalizeSpecial(x) {
+    return {
+      title: x.title || (x.deal_title ? x.deal_title + ' · Special' : 'Special'),
+      s: x.biz || x.business_name || '',
+      area: x.area || '',
+      time: x.time_window || x.time || '',
+      link: x.url || x.link || ''
+    };
+  }
+  async function paintSpecials() {
+    const grid = $('#specialsGrid');
+    if (!grid) return;
+    const list = await getJSON(PATH_SPECIALS) || [];
+    grid.innerHTML = (list || []).slice(0, 6).map(o => {
+      const s = normalizeSpecial(o);
+      const meta = [s.s, s.area, s.time].filter(Boolean).join(' • ');
+      const link = s.link ? `<a href="${s.link}" target="_blank" rel="noopener">Details</a>` : '';
+      return `<article class="special">
         <h3>${s.title}</h3>
         <div class="meta">${meta}</div>
-        <p><a href="${s.link}" target="_blank" rel="noopener">Details</a></p>
+        ${link}
       </article>`;
-  }).join("");
-}
-
-// ---------- Weather (from /data/weather.json) ----------
-async function paintWeather() {
-  const ul = document.querySelector('.wx');
-  if (!ul) return;
-  const rows = await fetchJSON(PATH_WEATHER, []);
-  if (!rows || rows.length === 0) return;
-  ul.innerHTML = rows.map(x => {
-    const w = new Date(x.date).toLocaleDateString([], { weekday: 'short' });
-    const hi = Math.round(x.hi), lo = Math.round(x.lo);
-    const pr = (x.precip ?? 0) + '%';
-    return `<li><b>${w}</b> <span>${hi}°/${lo}°</span> <em>${pr}</em></li>`;
-  }).join('');
-}
-
-// ---------- "Data last updated" (from /data/meta.json) ----------
-async function paintLastUpdated() {
-  const el = $("#dataUpdated");
-  if (!el) return;
-  const meta = await fetchJSON(PATH_META, null);
-  if (!meta?.lastUpdated) { el.textContent = 'Data updated — n/a'; return; }
-  const dt = new Date(meta.lastUpdated).toLocaleString([], { dateStyle:'medium', timeStyle:'short' });
-  el.textContent = `Data updated — ${dt}`;
-}
-
-// ---------- Marquee ticker ----------
-function mountTicker(nextGame) {
-  const track = $("#tickerTrack");
-  if (!track || !nextGame) return;
-
-  function nowCountdownStr() {
-    const { d, h, m } = untilParts(nextGame.date);
-    return `${pad(d)}d ${pad(h)}h ${pad(m)}m`;
-  }
-  function buildChunk() {
-    const parts = [
-      `Kickoff vs ${nextGame.opponent}: ${fmtDate(nextGame.date)} ${fmtTime(nextGame.date)}`,
-      `Countdown ${nowCountdownStr()}`,
-      (nextGame.venue || (nextGame.home ? "Knoxville, TN" : "Away"))
-    ];
-    return parts.map(p => `<span class="ticker-item">${p}</span><span class="ticker-bullet">•</span>`).join('');
-  }
-  track.innerHTML = `<div class="ticker-row">${buildChunk()}</div><div class="ticker-row">${buildChunk()}</div>`;
-  setInterval(() => {
-    const rows = track.querySelectorAll('.ticker-row');
-    rows.forEach(r => r.innerHTML = buildChunk());
-  }, 60000);
-}
-
-// ---------- Add-to-Calendar (.ics) ----------
-function toICSDate(iso) {
-  const d = new Date(iso);
-  const z = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
-  const YYYY = z.getUTCFullYear(), MM = pad(z.getUTCMonth() + 1), DD = pad(z.getUTCDate());
-  const HH = pad(z.getUTCHours()), m = pad(z.getUTCMinutes()), s = pad(z.getUTCSeconds());
-  return `${YYYY}${MM}${DD}T${HH}${m}${s}Z`;
-}
-function icsBlobForGame(game) {
-  const start = new Date(game.date);
-  const end = new Date(start.getTime() + 3 * 60 * 60 * 1000); // 3h default
-  const lines = [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//Tennessee Gameday Hub//HC Web Labs//EN',
-    'CALSCALE:GREGORIAN',
-    'METHOD:PUBLISH',
-    'BEGIN:VEVENT',
-    `UID:${(crypto.randomUUID?.() || ('tenn-'+Date.now()))}@hcweblabs`,
-    `DTSTAMP:${toICSDate(new Date().toISOString())}`,
-    `DTSTART:${toICSDate(start.toISOString())}`,
-    `DTEND:${toICSDate(end.toISOString())}`,
-    `SUMMARY:Tennessee vs ${game.opponent} (Unofficial Reminder)`,
-    `DESCRIPTION:Unofficial fan reminder. Times/TV may change. Check official sources.`,
-    `LOCATION:${(game.venue || (game.home ? 'Knoxville, TN' : 'Away')).replace(/\n/g,' ')}`,
-    'END:VEVENT',
-    'END:VCALENDAR'
-  ].join('\r\n');
-  return new Blob([lines], { type: 'text/calendar' });
-}
-function wireAddToCal(game) {
-  const linkHero = $("#addCalHero");
-  const linkCard = $("#addCalCard");
-  if (!game) return;
-  const blob = icsBlobForGame(game);
-  const url = URL.createObjectURL(blob);
-  const fname = `tennessee-vs-${game.opponent.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.ics`;
-  [linkHero, linkCard].forEach(a => {
-    if (!a) return;
-    a.href = url;
-    a.download = fname;
-    a.setAttribute('aria-label', `Add ${game.opponent} game to your calendar`);
-  });
-}
-
-// ---------- Leaflet Map (from /data/places.json) ----------
-async function paintLeafletMap() {
-  const mapEl = $("#leafletMap");
-  if (!mapEl) return;
-  if (typeof L === 'undefined') { console.warn('Leaflet not loaded'); return; }
-
-  // Init map (center Knoxville)
-  const map = L.map('leafletMap', { scrollWheelZoom: false });
-  const center = [35.9606, -83.9207];
-  map.setView(center, 13);
-
-  // Tiles + attribution (required by OSM)
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-  }).addTo(map);
-
-  // Load places
-  const places = await fetchJSON(PATH_PLACES, []);
-  if (!places || !places.length) {
-    $("#mapNote") && ($("#mapNote").textContent = 'No live places data yet — check back soon.');
-    setTimeout(() => map.invalidateSize(), 50);
-    return;
+    }).join('');
   }
 
-  const markers = [];
-  places.forEach(p => {
-    if (typeof p.lat !== 'number' || typeof p.lon !== 'number') return;
-    const m = L.marker([p.lat, p.lon]).addTo(map);
-    const link = p.url ? `<br><a href="${p.url}" target="_blank" rel="noopener">Website</a>` : '';
-    m.bindPopup(`<strong>${p.name}</strong><br>${p.address || p.area || ''}${link}`);
-    markers.push(m);
-  });
+  /* ---------- Map + Places ---------- */
+  async function paintMap() {
+    const el = $('#map');
+    if (!el || !window.L) return;
+    const KNOX = [35.9606, -83.9207];
 
-  const group = L.featureGroup(markers);
-  try { map.fitBounds(group.getBounds().pad(0.2)); } catch {}
-  setTimeout(() => map.invalidateSize(), 100);
-}
+    const map = L.map('map', { scrollWheelZoom: false }).setView(KNOX, 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap',
+    }).addTo(map);
 
-// ---------- Init ----------
-(async function init() {
-  const [schedule, specials] = await Promise.all([
-    fetchJSON(PATH_SCHEDULE, []),
-    fetchJSON(PATH_SPECIALS, [])
-  ]);
+    const places = await getJSON(PATH_PLACES) || [];
+    places.forEach(p => {
+      if (!Number.isFinite(p.lat) || !Number.isFinite(p.lon)) return;
+      const marker = L.marker([p.lat, p.lon]).addTo(map);
+      const title = p.name || 'Place';
+      const meta = [p.area, p.address].filter(Boolean).join('<br/>');
+      const link = p.url ? `<br/><a href="${p.url}" target="_blank" rel="noopener">Website</a>` : '';
+      marker.bindPopup(`<b>${title}</b><br/>${meta}${link}`);
+    });
+  }
 
-  paintSchedule(schedule);
-  paintSpecials(specials);
-  paintWeather();
-  paintLastUpdated();
+  /* ---------- Data updated meta ---------- */
+  async function paintMeta() {
+    const el = $('#dataUpdated');
+    if (!el) return;
+    const meta = await getJSON(PATH_META);
+    if (!meta?.lastUpdated) { el.textContent = '—'; return; }
+    try {
+      el.textContent = fmt(meta.lastUpdated, { dateStyle: 'medium', timeStyle: 'short' });
+    } catch {
+      el.textContent = meta.lastUpdated;
+    }
+  }
 
-  const next = pickNextGame(schedule);
-  paintQuick(next);
-  tickCountdown(next?.date);
-  setInterval(() => tickCountdown(next?.date), 1000);
-  mountTicker(next);
-  wireAddToCal(next);
+  /* ---------- Boot ---------- */
+  async function boot() {
+    await Promise.all([
+      paintUpcoming(),
+      paintSchedule(),
+      paintWeather(),
+      paintSpecials(),
+      paintMap(),
+      paintMeta(),
+    ]);
+  }
 
-  paintLeafletMap();
+  document.addEventListener('DOMContentLoaded', boot);
 })();
