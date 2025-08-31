@@ -1,8 +1,16 @@
 [
-  { "title": "Wings + Pitchers",      "biz": "Checkerboard Tavern", "area": "The Strip",  "time": "4–7pm",         "link": "#" },
-  { "title": "Post-Game Pancakes",    "biz": "Old City Bakehouse",  "area": "Old City",  "time": "9:30pm–1am",    "link": "#" },
-  { "title": "Family Brunch",         "biz": "Market Square Café",  "area": "Downtown",  "time": "Sat–Sun",       "link": "#" },
-  { "title": "Pizza & Pitchers",      "biz": "Riverfront Pizza",    "area": "Downtown",  "time": "All day",       "link": "#" },
-  { "title": "Pre-Game Sliders",      "biz": "Volunteer Grill",     "area": "The Strip", "time": "2–5pm",         "link": "#" },
-  { "title": "Coffee & Donuts Deal",  "biz": "Old City Coffee",     "area": "Old City",  "time": "7–11am",        "link": "#" }
+{
+"title": "2-for-1 Apps on Gameday",
+"biz": "Old City Grill",
+"area": "Old City",
+"time": "Gameday only",
+"link": "https://example.com/menu"
+},
+{
+"title": "$12 Large 1‑Topping Post‑Game",
+"biz": "The Strip Pizza Co.",
+"area": "The Strip",
+"time": "Post‑game (Home games)",
+"link": "https://example.com/deals"
+}
 ]
