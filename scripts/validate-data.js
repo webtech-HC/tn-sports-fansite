@@ -1,4 +1,4 @@
-// Validates /data/*.json against /data/schemas/*.schema.json using Ajv
+
 const fs = require('fs');
 const path = require('path');
 const Ajv = require('ajv');
