@@ -1,237 +1,299 @@
-/* App: reads /data/*.json and paints UI
-   - score dot: red / yellow / green
-   - map + weather + schedule + specials
+/* app.js — Tennessee Fansite UI glue (browser-only)
+   Assumes static JSON written by Actions:
+   /data/next.json, /data/schedule.json, /data/weather.json, /data/places.json, /data/specials.json
 */
 
-const PATH_SCHEDULE = 'data/schedule.json';
-const PATH_NEXT     = 'data/next.json';
-const PATH_WEATHER  = 'data/weather.json';
-const PATH_SPECIALS = 'data/specials.json';
-const PATH_PLACES   = 'data/places.json';
-const PATH_META     = 'data/meta.json';
+const PATH_NEXT     = '/data/next.json';
+const PATH_SCHEDULE = '/data/schedule.json';
+const PATH_WEATHER  = '/data/weather.json';
+const PATH_PLACES   = '/data/places.json';
+const PATH_SPECIALS = '/data/specials.json';
 
-// Helpers
-const $  = (sel, el = document) => el.querySelector(sel);
-const $$ = (sel, el = document) => Array.from(el.querySelectorAll(sel));
-const fmtDate = (d) => new Date(d).toLocaleDateString(undefined, { month:'short', day:'2-digit' });
-const fmtTime = (d) => new Date(d).toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
-const fetchJSON = async (url) => (await fetch(url, { cache:'no-store' })).json();
+// Knoxville fallback
+const KNOX = [35.9606, -83.9207];
 
-function setScoreDot(state){
-  const dot = $('#scoreDot');
-  if (!dot) return;
-  dot.setAttribute('data-state', state); // red | yellow | green
+/* ================ Helpers ================ */
+const $ = (sel, root=document) => root.querySelector(sel);
+
+function fmtDate(d){
+  // Sat Sep 6, 3:30 PM
+  return new Date(d).toLocaleString([], { weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+}
+function fmtDay(d){
+  return new Date(d).toLocaleDateString([], { weekday:'short' });
+}
+function fmtHILO(n){
+  return Math.round(n);
+}
+function setUpdated(){
+  const t = new Date().toLocaleString([], { dateStyle:'medium', timeStyle:'short' });
+  $('#updatedAt')?.replaceChildren(t);
+  $('#updatedAt2')?.replaceChildren(t);
 }
 
-// ----- Score box + Upcoming -----
-async function paintScoreAndUpcoming(){
-  const next = await fetchJSON(PATH_NEXT).catch(() => null);
-  const body = $('#scoreBody');
-  const line = $('#nextLine');
-  const venue = $('#venueLine');
+/* ================ Countdown (optional basic) ================ */
+function startCountdown(nextIso){
+  const el = $('#kickoffClock');
+  if(!el || !nextIso) return;
+  function tick(){
+    const now = new Date();
+    const diff = new Date(nextIso) - now;
+    if(diff <= 0){
+      el.textContent = 'Kickoff in 0 days 0 hours 0 minutes';
+      return;
+    }
+    const mins = Math.floor(diff/60000);
+    const days = Math.floor(mins/1440);
+    const hours = Math.floor((mins%1440)/60);
+    const m = mins%60;
+    el.textContent = `Kickoff in ${days}d ${hours}h ${m}m`;
+  }
+  tick();
+  setInterval(tick, 60*1000);
+}
 
-  if (!next || !next.date){
-    setScoreDot('red');
-    body.innerHTML = `<div class="team">Tennessee</div><p>No scheduled game.</p>`;
-    line.textContent = '—';
-    venue.textContent = '';
+/* ================ Live score signal ================ */
+function setScoreSignal(nextIso){
+  const dot = $('#scoreDot');
+  const msg = $('#scoreMsg');
+  if(!dot) return;
+
+  if(!nextIso){
+    dot.dataset.state = 'red';
+    msg.textContent = 'No game info.';
     return;
   }
 
-  const kickoff = new Date(next.date);                // assumed stored in UTC
-  const end     = new Date(kickoff.getTime() + 4*60*60*1000); // 4h window
-  const now     = new Date();
+  const now = new Date();
+  const start = new Date(nextIso);
 
-  // Default text
-  const opp = next.opponent || 'Opponent';
-  const homeAway = next.home ? 'Home' : 'Away';
-  line.textContent = `${opp} — ${kickoff.toLocaleDateString()} • ${fmtTime(kickoff)} ${homeAway}`;
-  venue.textContent = `Venue: ${next.venue || '—'}`;
+  // crude end: kickoff + 5 hours, covers OT; refine later if live scoring added
+  const end = new Date(start.getTime() + 5*60*60*1000);
 
-  // Scorebox content
-  const tn = 'Tennessee';
-  const statusLine = () => {
-    if (now >= kickoff && now <= end && !next.result) return 'Game in progress.';
-    if (now.toDateString() === kickoff.toDateString() && now < kickoff) return `Game day. Kickoff at ${fmtTime(kickoff)}.`;
-    if (next.result) return `Final: ${next.result}`;
-    return 'No game in progress.';
-  };
+  const isSameCalendarDay = start.toDateString() === now.toDateString();
 
-  body.innerHTML = `
-    <div class="team">${tn}</div>
-    <p>${statusLine()}</p>
-  `;
-
-  // Dot state
-  if (now >= kickoff && now <= end && !next.result) {
-    setScoreDot('green');
-  } else if (now.toDateString() === kickoff.toDateString() && now < kickoff) {
-    setScoreDot('yellow');
+  if(now >= start && now <= end){
+    dot.dataset.state = 'green';
+    msg.textContent = 'Game in progress.';
+  } else if(isSameCalendarDay && now < start){
+    dot.dataset.state = 'yellow';
+    msg.textContent = 'Gameday — awaiting kickoff.';
   } else {
-    setScoreDot('red');
+    dot.dataset.state = 'red';
+    msg.textContent = 'No game in progress.';
   }
-
-  // Add-to-calendar hooks (ICS)
-  const addIcs = () => {
-    const start = kickoff.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z');
-    const endIso= end.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z');
-    const summary = `Tennessee vs ${opp}`;
-    const description = 'Unofficial fan site event';
-    const loc = next.venue || 'Knoxville, TN';
-    const ics = [
-      'BEGIN:VCALENDAR',
-      'VERSION:2.0',
-      'PRODID:-//TN Fansite//EN',
-      'BEGIN:VEVENT',
-      `DTSTART:${start}`,
-      `DTEND:${endIso}`,
-      `SUMMARY:${summary}`,
-      `LOCATION:${loc}`,
-      `DESCRIPTION:${description}`,
-      'END:VEVENT',
-      'END:VCALENDAR'
-    ].join('\r\n');
-    const blob = new Blob([ics], {type:'text/calendar;charset=utf-8;'});
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href = url; a.download = 'tennessee-game.ics'; a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1500);
-  };
-  $('#btnIcs')?.addEventListener('click', addIcs, { once:true });
-  $('#btnIcs2')?.addEventListener('click', addIcs, { once:true });
 }
 
-// ----- Schedule table -----
+/* ================ Map ================ */
+function initMap(){
+  const mapEl = $('#map');
+  if(!mapEl) return null;
+
+  const map = L.map('map', { scrollWheelZoom:false }).setView(KNOX, 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution:'&copy; OpenStreetMap contributors'
+  }).addTo(map);
+  return map;
+}
+
+/* ================ Data paint: Upcoming ================ */
+async function paintUpcoming(){
+  try{
+    const next = await fetch(PATH_NEXT, {cache:'no-store'}).then(r => r.json()).catch(() => null);
+    const el = $('#nextLine');
+    const venueEl = $('#nextVenue');
+
+    if(!next || !next.date || !next.opponent){
+      el.textContent = 'No upcoming game found.';
+      return null;
+    }
+
+    const when = fmtDate(next.date);
+    const ha = next.home === true ? 'Home' : next.home === false ? 'Away' : '—';
+    el.textContent = `Tennessee vs ${next.opponent} — ${when} (${ha})`;
+    venueEl.textContent = next.venue ? `Venue: ${next.venue}` : '';
+
+    // kickoff utilities
+    startCountdown(next.date);
+    setScoreSignal(next.date);
+
+    // Add to calendar (basic .ics)
+    const btn = $('#addToCalendar');
+    if(btn){
+      btn.onclick = () => {
+        const dt = new Date(next.date);
+        const dtEnd = new Date(dt.getTime() + 3*60*60*1000);
+        const ics =
+`BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//HC Web Labs//TN Fansite//EN
+BEGIN:VEVENT
+UID:${dt.getTime()}@tn-fansite
+DTSTAMP:${toICS(new Date())}
+DTSTART:${toICS(dt)}
+DTEND:${toICS(dtEnd)}
+SUMMARY:Tennessee vs ${next.opponent}
+LOCATION:${(next.venue||'').replace(/,/g,'\\,')}
+DESCRIPTION:TN Gameday
+END:VEVENT
+END:VCALENDAR`;
+        const blob = new Blob([ics], {type:'text/calendar'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `tennessee-${dt.toISOString().slice(0,10)}.ics`;
+        document.body.appendChild(a); a.click(); a.remove();
+        URL.revokeObjectURL(url);
+      };
+    }
+
+    return next.date;
+  }catch(e){
+    console.error('upcoming error', e);
+    return null;
+  }
+}
+function toICS(d){
+  // yyyymmddThhmmssZ
+  return new Date(d).toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z$/,'Z');
+}
+
+/* ================ Data paint: Schedule ================ */
 async function paintSchedule(){
-  const rowsEl = $('#schedRows');
-  const btn = $('#showMoreBtn');
-  const data = await fetchJSON(PATH_SCHEDULE).catch(() => []);
+  const tbody = $('#schedRows');
+  const btn = $('#schedMore');
+  if(!tbody) return;
 
-  let shown = 0;
-  const page = 3;
+  try{
+    let rows = await fetch(PATH_SCHEDULE, {cache:'no-store'}).then(r => r.json()).catch(() => []);
+    // sort defensive
+    rows = (rows||[]).slice().sort((a,b) => new Date(a.date) - new Date(b.date));
 
-  function renderChunk(){
-    const slice = data.slice(shown, shown + page);
-    rowsEl.insertAdjacentHTML('beforeend', slice.map(r => {
-      const date = r.date ? fmtDate(r.date) : '—';
-      const opp  = r.opponent || '—';
-      const ha   = r.home === true ? 'H' : (r.home === false ? 'A' : '—');
-      const tv   = r.tv || '—';
-      const res  = r.result || '—';
-      return `<tr><td>${date}</td><td>${opp}</td><td>${ha}</td><td>${tv}</td><td>${res}</td></tr>`;
-    }).join(''));
-    shown += slice.length;
-    if (shown >= data.length) btn.style.display = 'none';
+    // render with "show more" (initial 3)
+    let shown = 3;
+    const render = () => {
+      tbody.innerHTML = rows.slice(0, shown).map(g => {
+        const ha = g.home === true ? 'H' : g.home === false ? 'A' : '—';
+        const tv = g.tv ?? 'TBD';
+        const res = g.result ?? '—';
+        return `<tr>
+          <td>${new Date(g.date).toLocaleDateString([], {month:'short', day:'2-digit', year:'numeric'})}</td>
+          <td>${escapeHtml(g.opponent || '—')}</td>
+          <td>${ha}</td>
+          <td>${escapeHtml(tv)}</td>
+          <td>${escapeHtml(res)}</td>
+        </tr>`;
+      }).join('');
+      if(btn){
+        if(shown >= rows.length){ btn.style.display='none'; }
+        else { btn.style.display='inline-flex'; btn.textContent = `Show ${Math.min(3, rows.length-shown)} more`; }
+      }
+    };
+    render();
+
+    btn?.addEventListener('click', () => { shown = Math.min(shown+3, rows.length); render(); });
+  }catch(e){
+    console.error('schedule error', e);
   }
-
-  btn.addEventListener('click', renderChunk);
-  renderChunk();
 }
 
-// ----- Weather (rail) -----
+/* ================ Data paint: Weather (rail) ================ */
 async function paintWeather(){
-  const ul = $('#wxList');
-  const rows = await fetchJSON(PATH_WEATHER).catch(() => []);
-  if (!rows?.length){ ul.innerHTML = '<li>—</li>'; return; }
+  const list = $('#wxList');
+  if(!list) return;
 
-  ul.innerHTML = rows.slice(0,3).map(d => {
-    const day = new Date(d.date).toLocaleDateString(undefined,{ weekday:'short'});
-    const hi  = Math.round(d.hi);
-    const lo  = Math.round(d.lo);
-    const pr  = Math.round(d.precip || 0);
-    return `<li><span class="day">${day}</span><span>Hi ${hi}°</span><span>Lo ${lo}°</span><span>${pr}%</span></li>`;
-  }).join('');
+  try{
+    const data = await fetch(PATH_WEATHER, {cache:'no-store'}).then(r => r.json()).catch(() => []);
+    const rows = (data||[]).slice(0,3).map(x => {
+      const hi = fmtHILO(x.hi), lo = fmtHILO(x.lo), pr = Math.round(x.precip*10)/10;
+      return `<li><span>${fmtDay(x.date)}</span><span>Hi ${hi}° Lo ${lo}° &nbsp; ${pr}%</span></li>`;
+    }).join('');
+    list.innerHTML = rows || `<li class="muted">No forecast.</li>`;
+  }catch(e){
+    console.error('weather error', e);
+  }
 }
 
-// ----- Specials -----
+/* ================ Data paint: Specials ================ */
 async function paintSpecials(){
   const grid = $('#specialsGrid');
-  const list = await fetchJSON(PATH_SPECIALS).catch(() => []);
-  if (!list?.length){ grid.innerHTML = '<div class="muted">No specials yet.</div>'; return; }
+  if(!grid) return;
 
-  grid.innerHTML = list.map(x => {
-    const title = x.title || (x.deal_title ? `${x.deal_title} – Special` : 'Special');
-    const meta  = [x.biz, x.area].filter(Boolean).join(' • ');
-    const link  = x.link ? `<a href="${x.link}" target="_blank" rel="noopener">Details</a>` : '';
-    return `<article class="special"><h4>${title}</h4><p class="muted">${meta}</p>${link}</article>`;
-  }).join('');
+  try{
+    const list = await fetch(PATH_SPECIALS, {cache:'no-store'}).then(r => r.json()).catch(() => []);
+    if(!list || !list.length){
+      grid.innerHTML = `<div class="muted">No specials yet.</div>`;
+      return;
+    }
+    grid.innerHTML = list.map(s => {
+      const title = escapeHtml(s.title || `${s.biz||''} Special`);
+      const biz = escapeHtml(s.biz || '');
+      const area = escapeHtml(s.area || '');
+      const when = escapeHtml(s.time || s.time_window || '');
+      const link = s.link ? `<a href="${s.link}" target="_blank" rel="noopener">Details</a>` : '';
+      return `<article class="card">
+        <header><h3 class="tiny">${title}</h3></header>
+        <div class="card-body">
+          ${biz ? `<div class="small">${biz}${area? ' — '+area: ''}</div>` : ''}
+          ${when ? `<div class="tiny muted">${when}</div>` : ''}
+          <div class="mt-1">${link}</div>
+        </div>
+      </article>`;
+    }).join('');
+  }catch(e){
+    console.error('specials error', e);
+  }
 }
 
-// ----- Places list (simple bullets + map markers same data) -----
-async function paintPlaces(){
+/* ================ Data paint: Places (simple list) ================ */
+async function paintPlaces(map){
   const ul = $('#placesList');
-  const places = await fetchJSON(PATH_PLACES).catch(() => []);
-  if (!places?.length){ ul.innerHTML = '<li class="muted">No places yet.</li>'; return; }
+  const empty = $('#placesEmpty');
+  if(!ul) return;
 
-  ul.innerHTML = places.slice(0,8).map(p => `<li>${p.name || 'Place'}${p.area ? ` — ${p.area}`:''}</li>`).join('');
+  try{
+    const places = await fetch(PATH_PLACES, {cache:'no-store'}).then(r => r.json()).catch(() => []);
+    if(!places || !places.length){
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+    ul.innerHTML = places.slice(0,8).map(p => {
+      const n = escapeHtml(p.name||'Place');
+      const a = escapeHtml(p.formatted_address || p.address || '');
+      return `<li>${n}<div class="tiny muted">${a}</div></li>`;
+    }).join('');
 
-  // Add markers to the map if we have lat/lon
-  if (window.__map) {
-    places.slice(0, 20).forEach(p => {
-      if (typeof p.lat === 'number' && typeof p.lon === 'number') {
-        L.marker([p.lat, p.lon]).addTo(window.__map).bindPopup(p.name || 'Place');
-      }
-    });
+    // optional map markers
+    if(map){
+      places.slice(0,20).forEach(p => {
+        if(typeof p.lat === 'number' && typeof p.lng === 'number'){
+          L.marker([p.lat, p.lng]).addTo(map).bindPopup(`<strong>${escapeHtml(p.name||'')}</strong>`);
+        }
+      });
+    }
+  }catch(e){
+    console.error('places error', e);
   }
 }
 
-// ----- Map -----
-function bootMap(){
-  const el = $('#map');
-  if (!el || typeof L === 'undefined') return;
-  const center = [35.955, -83.929]; // Knoxville-ish
-  const map = L.map(el, { scrollWheelZoom:false }).setView(center, 13);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-    maxZoom: 19,
-    attribution: '&copy; OpenStreetMap'
-  }).addTo(map);
-  window.__map = map;
+/* ================ Utilities ================ */
+function escapeHtml(s=''){
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-// ----- Data updated stamp -----
-async function paintMeta(){
-  const meta = await fetchJSON(PATH_META).catch(() => null);
-  const stampEls = $$('.meta');
-  if (!meta?.updated) return;
-  stampEls.forEach(el => {
-    if (/Data updated/i.test(el.textContent)) el.textContent = `Data updated ${new Date(meta.updated).toLocaleString()}`;
-  });
-}
+/* ================ Boot ================ */
+(async function boot(){
+  setUpdated();
 
-// ----- Countdown (header bar) -----
-async function paintCountdown(){
-  const next = await fetchJSON(PATH_NEXT).catch(() => null);
-  if (!next?.date) return;
-  const target = new Date(next.date).getTime();
-  const el = $('#countdown');
-  if (!el) return;
-
-  function tick(){
-    const now = Date.now();
-    let t = Math.max(0, target - now);
-    const d = Math.floor(t / 86400000); t -= d*86400000;
-    const h = Math.floor(t / 3600000);  t -= h*3600000;
-    const m = Math.floor(t / 60000);    t -= m*60000;
-    const s = Math.floor(t / 1000);
-    el.textContent = `${d}d • ${h}h • ${m}m • ${s}s`;
-  }
-  tick();
-  setInterval(tick, 1000);
-}
-
-// ----- Boot -----
-async function boot(){
-  bootMap();
-
+  const map = initMap();
+  const nextIso = await paintUpcoming();
   await Promise.all([
-    paintScoreAndUpcoming(),
     paintSchedule(),
     paintWeather(),
     paintSpecials(),
-    paintPlaces(),
-    paintMeta(),
-    paintCountdown()
+    paintPlaces(map),
   ]);
-}
 
-document.addEventListener('DOMContentLoaded', boot);
+  // Re-stamp updated time each minute (optional)
+  setInterval(setUpdated, 60*1000);
+})();
