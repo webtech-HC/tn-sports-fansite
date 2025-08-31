@@ -1,10 +1,17 @@
-# .github/workflows/validate.yml
 name: Validate data JSON
 
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'data/*.json'
+      - 'data/schemas/**.json'
+      - 'scripts/validate-data.js'
   pull_request:
+    paths:
+      - 'data/*.json'
+      - 'data/schemas/**.json'
+      - 'scripts/validate-data.js'
 
 permissions:
   contents: read
@@ -14,7 +21,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -24,4 +30,3 @@ jobs:
 
       - name: Run validator
         run: node scripts/validate-data.js
-
